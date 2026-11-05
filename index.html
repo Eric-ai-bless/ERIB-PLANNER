@@ -64,7 +64,8 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
     <button type="submit">Sign in</button>
    </form>
    <form id="fup" hidden autocomplete="on">
-    <label>Username<input id="upUser" autocomplete="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_.\-]{3,30}" title="3–30 letters, numbers, dot, dash or underscore"></label>
+    <label>First name<input id="upFirst" autocomplete="given-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
+    <label>Second name<input id="upLast" autocomplete="family-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
     <label>Email<input id="upEmail" type="email" autocomplete="email" required></label>
     <label>Password<input id="upPass" type="password" autocomplete="new-password" required minlength="6"></label>
     <button type="submit">Create account</button>
@@ -408,7 +409,7 @@ $('fin').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);
 $('fup').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);say('Creating account…')
  const email=$('upEmail').value.trim(),password=$('upPass').value
  try{
-  const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('upUser').value.trim(),email,password})})
+  const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({firstName:$('upFirst').value.trim(),lastName:$('upLast').value.trim(),email,password})})
   const j=await r.json().catch(()=>({}))
   if(!r.ok)say(j.error||'Could not create the account.',true)
   else{say('Account created. Signing you in…');await doLogin(email,password)}
