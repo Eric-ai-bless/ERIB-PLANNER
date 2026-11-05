@@ -1,6 +1,25 @@
 import { admin, verifyRequestOrigin, AuthError } from '@netlify/identity'
 import type { Config } from '@netlify/functions'
+import { eq } from 'drizzle-orm'
 import { normBirthday, normFood, saveAnswers } from '../../db/security.js'
+import { getSettings, OWNER_EMAIL, setSetting } from '../../db/subs.js'
+import { db } from '../../db/index.js'
+import { lessonPlans, securityAnswers, usage, userSubscriptions } from '../../db/schema.js'
+
+// The owner asked for their old account to be removed and recreated. The first sign-up with the
+// owner email replaces the existing account once (lesson plans are kept and moved to the new
+// account). After that this flag is set and the owner email behaves like any other email.
+const OWNER_RECREATE_FLAG = 'owner_recreated_v1'
+
+async function findUserByEmail(email: string) {
+  for (let page = 1; page <= 50; page++) {
+    const batch = await admin.listUsers({ page, perPage: 100 })
+    const u = batch.find((x) => (x.email || '').toLowerCase() === email)
+    if (u) return u
+    if (batch.length < 100) break
+  }
+  return null
+}
 
 // Creates an account with first name, second name, email, password, and the birthday /
 // favorite food answers used to reset a forgotten password.
@@ -42,6 +61,23 @@ export default async (req: Request) => {
   if (password.length < 6 || password.length > 128)
     return Response.json({ error: 'Password must be at least 6 characters.' }, { status: 422 })
 
+  // One-time replacement of the existing owner account.
+  let replacedId = ''
+  if (email === OWNER_EMAIL) {
+    try {
+      const settings = await getSettings()
+      if (!settings[OWNER_RECREATE_FLAG]) {
+        const old = await findUserByEmail(email)
+        if (old) {
+          await admin.deleteUser(old.id)
+          replacedId = old.id
+        }
+      }
+    } catch (e) {
+      console.error('Replacing the owner account failed', e)
+    }
+  }
+
   try {
     const user = await admin.createUser({
       email,
@@ -52,6 +88,21 @@ export default async (req: Request) => {
       await saveAnswers(user.id, email, body?.birthday, body?.food)
     } catch (e) {
       console.error('Saving security answers failed', e)
+    }
+    if (email === OWNER_EMAIL) {
+      try {
+        // Never run the one-time replacement (or the initial admin password setup) again.
+        await setSetting(OWNER_RECREATE_FLAG, new Date().toISOString())
+        await setSetting('owner_password_set_v2', new Date().toISOString())
+        if (replacedId) {
+          await db.update(lessonPlans).set({ userId: user.id }).where(eq(lessonPlans.userId, replacedId))
+          await db.delete(securityAnswers).where(eq(securityAnswers.userId, replacedId))
+          await db.delete(usage).where(eq(usage.userId, replacedId))
+          await db.delete(userSubscriptions).where(eq(userSubscriptions.userId, replacedId))
+        }
+      } catch (e) {
+        console.error('Finishing the owner account replacement failed', e)
+      }
     }
     return Response.json({ ok: true, id: user.id })
   } catch (e) {
