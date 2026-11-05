@@ -44,9 +44,29 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 .sv{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.sv:first-child{border-top:0}.sv span{flex:1;font-size:13px;word-break:break-word}.sv small{color:var(--mut)}.sv button{padding:4px 12px;font-size:13px}
 #ubar{display:flex;align-items:center;gap:10px;font-size:13px}#ubar[hidden]{display:none}
 #ubar button{padding:6px 12px;background:transparent;color:var(--accink);border-color:var(--accink)}
+.hl{display:flex;align-items:center;gap:12px}
+#burger{width:42px;height:42px;padding:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;background:transparent;border:1px solid var(--accink);border-radius:8px;flex:none}
+#burger[hidden]{display:none}
+#burger span{display:block;width:20px;height:2px;background:var(--accink);border-radius:2px;transition:transform .2s,opacity .2s}
+#burger[aria-expanded=true] span:nth-child(1){transform:translateY(7px) rotate(45deg)}#burger[aria-expanded=true] span:nth-child(2){opacity:0}#burger[aria-expanded=true] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}#scrim[hidden]{display:none}
+#drawer{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:85vw;background:var(--card);border-right:1px solid var(--line);z-index:45;transform:translateX(-100%);transition:transform .22s ease;padding:calc(16px + env(safe-area-inset-top,0px)) 12px 16px;display:flex;flex-direction:column;gap:4px;visibility:hidden}
+#drawer.open{transform:none;visibility:visible}
+#drawer .dh{font-weight:700;color:var(--acc);font-size:17px;padding:4px 10px 2px}#drawer .du{font-size:13px;color:var(--mut);padding:0 10px 12px;border-bottom:1px solid var(--line);margin-bottom:6px;word-break:break-word}
+#drawer a{display:block;padding:10px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600}
+#drawer a:hover{background:var(--bg)}#drawer a[aria-current=page]{background:var(--acc);color:var(--accink)}
+#drawer .sp{flex:1}
+body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash,body[data-view=new] #saved,body[data-view=saved] #dash,body[data-view=saved] .vnew{display:none!important}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.tile{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}
+.tile small{display:block;font-size:12px;color:var(--mut);font-weight:600}.tile b{display:block;font-size:26px;line-height:1.2;margin-top:2px;font-variant-numeric:tabular-nums}
+#dash h2{margin:0;font-size:20px}#dash h3{margin:16px 0 6px;font-size:15px}
+.subj{display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.subj i{display:block;height:10px;border-radius:0 4px 4px 0;background:var(--acc);min-width:4px}.subj em{font-style:normal;color:var(--mut);font-variant-numeric:tabular-nums}
+.dempty{font-size:13px;color:var(--mut)}
 @media print{
  @page{size:A4;margin:8mm}
- body{background:#fff}header,#auth,.noprint{display:none!important}
+ body{background:#fff}header,#auth,#drawer,#scrim,#dash,.noprint{display:none!important}
  main{padding:0;max-width:none}.card{border:0;padding:0;margin:0}.sheet{overflow:visible}
  #paper{min-width:0;padding:0;font-size:8.5pt}
 }
@@ -75,9 +95,31 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
   </div>
  </div>
 </div>
-<header><div><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></div><div id="ubar" hidden><span>Signed in as <b id="uname"></b></span><button type="button" id="signout">Sign out</button></div></header>
+<header><div class="hl"><button type="button" id="burger" hidden aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button><div><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></div></div><div id="ubar" hidden><span>Signed in as <b id="uname"></b></span><button type="button" id="signout">Sign out</button></div></header>
+<div id="scrim" hidden></div>
+<nav id="drawer" aria-label="Main menu" aria-hidden="true">
+ <div class="dh">ERIB PLANNER</div><div class="du" id="dname"></div>
+ <a href="#dashboard" data-v="dash">Dashboard</a>
+ <a href="#new" data-v="new">New lesson plan</a>
+ <a href="#saved" data-v="saved">My saved lesson plans</a>
+ <div class="sp"></div>
+ <a href="#" id="dsignout">Sign out</a>
+</nav>
 <main>
-<section class="card noprint">
+<section class="card noprint" id="dash">
+ <h2 id="dhi">Welcome</h2>
+ <p class="note" style="margin-top:2px">Your lesson planning at a glance.</p>
+ <div class="tiles">
+  <div class="tile"><small>Saved lesson plans</small><b id="kTot">–</b></div>
+  <div class="tile"><small>Saved in the last 7 days</small><b id="kWk">–</b></div>
+  <div class="tile"><small>Subjects</small><b id="kSub">–</b></div>
+  <div class="tile"><small>Classes</small><b id="kCls">–</b></div>
+ </div>
+ <div class="bar" style="margin:0"><button type="button" data-go="new">New lesson plan</button><button type="button" class="alt" data-go="saved">View saved plans</button></div>
+ <h3>Plans by subject</h3><div id="dsub"><p class="dempty">Loading…</p></div>
+ <h3>Recently saved</h3><div id="drec"><p class="dempty">Loading…</p></div>
+</section>
+<section class="card noprint vnew" id="form">
  <div class="grid">
   <label class="wide">School name<input id="school" placeholder="e.g. Charles Lwanga Primary School"></label>
   <label class="wide">Teacher’s name<input id="teacher"></label>
@@ -113,11 +155,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
  <div id="svlist"></div>
 </section>
 
-<section class="card" id="out" hidden>
+<section class="card vnew" id="out" hidden>
  <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><button class="alt" id="sv">Save plan</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
  <div class="sheet"><div id="paper"></div></div>
 </section>
-<section class="card" id="nsec" hidden><div class="bar noprint" style="margin:0 0 10px"><b>Notes &amp; exercises (with marking guide)</b><button id="nw">Download Word (.docx)</button><button class="alt" id="np">Download PDF</button></div><div id="nbox" contenteditable="true"></div><p class="note noprint">Click any line to edit before downloading.</p></section>
+<section class="card vnew" id="nsec" hidden><div class="bar noprint" style="margin:0 0 10px"><b>Notes &amp; exercises (with marking guide)</b><button id="nw">Download Word (.docx)</button><button class="alt" id="np">Download PDF</button></div><div id="nbox" contenteditable="true"></div><p class="note noprint">Click any line to edit before downloading.</p></section>
 </main>
 <script>
 // AI generation through the site's Netlify Function (Claude via Netlify AI Gateway)
@@ -407,13 +449,13 @@ async function openPlan(id){const st=$('svmsg');st.textContent='Opening…';
   Object.keys(D).forEach(k=>delete D[k]);Object.assign(D,r.plan);if(!LB[D.lang])D.lang='en';
   PID=r.id;window.LASTBOOK='';$('sv').textContent='Update saved plan';$('out').hidden=false;render();
   if(Array.isArray(r.notes)&&r.notes.length)renderNotes(r.notes.map(n=>(n.t==='h1'?'# ':n.t==='h2'?'## ':n.t==='li'?'- ':'')+String(n.x).replace(/\n/g,' ')).join('\n'));else $('nsec').hidden=true;
-  st.textContent='';$('out').scrollIntoView({behavior:'smooth'})}
+  st.textContent='';window.setView&&window.setView('new');$('out').scrollIntoView({behavior:'smooth'})}
  catch(e){st.textContent='Could not open the plan: '+((e&&e.message)||'please try again')}}
 async function delPlan(id,t){if(!confirm('Delete the saved plan “'+t+'”?'))return;
  try{await api('DELETE','?id='+id);if(PID===id){PID=0;$('sv').textContent='Save plan'}loadSaved()}
  catch(e){$('svmsg').textContent='Could not delete: '+((e&&e.message)||'please try again')}}
 async function loadSaved(){const sec=$('saved'),ls=$('svlist'),st=$('svmsg');
- try{const rows=await api('GET');ls.innerHTML='';sec.hidden=false;
+ try{const rows=await api('GET');ls.innerHTML='';sec.hidden=false;window.renderDash&&window.renderDash(rows);
   if(!rows.length){st.textContent='No saved plans yet. Generate a plan and click “Save plan”.';return}
   st.textContent=rows.length+' saved';
   rows.forEach(p=>{const r=document.createElement('div');r.className='sv';const n=document.createElement('span');
@@ -422,12 +464,44 @@ async function loadSaved(){const sec=$('saved'),ls=$('svlist'),st=$('svmsg');
    const o=document.createElement('button');o.type='button';o.textContent='Open';o.onclick=()=>openPlan(p.id);
    const x=document.createElement('button');x.type='button';x.className='alt';x.textContent='Delete';x.onclick=()=>delPlan(p.id,t);
    r.append(n,o,x);ls.appendChild(r)})}
- catch(e){sec.hidden=false;st.textContent='Could not load saved plans: '+((e&&e.message)||'please try again')}}
-window.loadSaved=loadSaved;
+ catch(e){sec.hidden=false;window.renderDash&&window.renderDash(null);st.textContent='Could not load saved plans: '+((e&&e.message)||'please try again')}}
+window.loadSaved=loadSaved;window.openPlan=openPlan;
 window.clearSaved=()=>{$('saved').hidden=true;$('svlist').innerHTML='';PID=0;$('sv').textContent='Save plan'};
 $('nw').onclick=()=>save(()=>mkWord(notesXml(readNotes())),'.docx','Notes_Exercises_');
 $('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
 
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id),dr=$('drawer'),bg=$('scrim'),bu=$('burger'),V={dashboard:'dash',new:'new',saved:'saved'};
+function menu(on){dr.classList.toggle('open',on);dr.setAttribute('aria-hidden',on?'false':'true');bg.hidden=!on;bu.setAttribute('aria-expanded',on?'true':'false');bu.setAttribute('aria-label',on?'Close menu':'Open menu');if(on){const a=dr.querySelector('a[aria-current]')||dr.querySelector('a');a&&a.focus()}}
+function setView(v,keep){if(!['dash','new','saved'].includes(v))v='dash';document.body.dataset.view=v;
+ dr.querySelectorAll('a[data-v]').forEach(a=>a.dataset.v===v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+ const h=Object.keys(V).find(k=>V[k]===v);if(location.hash!=='#'+h)history.replaceState(null,'','#'+h);if(!keep)window.scrollTo(0,0)}
+window.setView=setView;window.closeMenu=()=>menu(false);
+bu.onclick=()=>menu(!dr.classList.contains('open'));bg.onclick=()=>menu(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dr.classList.contains('open')){menu(false);bu.focus()}});
+dr.querySelectorAll('a[data-v]').forEach(a=>a.onclick=e=>{e.preventDefault();setView(a.dataset.v);menu(false)});
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setView(b.dataset.go));
+$('dsignout').onclick=e=>{e.preventDefault();menu(false);$('signout').click()};
+window.addEventListener('hashchange',()=>setView(V[location.hash.slice(1)]||'dash'));
+setView(V[location.hash.slice(1)]||'dash',1);
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+window.renderDash=function(rows){const sub=$('dsub'),rec=$('drec');sub.innerHTML='';rec.innerHTML='';
+ if(!rows){['kTot','kWk','kSub','kCls'].forEach(k=>$(k).textContent='–');sub.appendChild(el('p','dempty','Could not load your saved plans.'));return}
+ const wk=Date.now()-7*864e5,cnt={},cl=new Set();
+ rows.forEach(p=>{const k=(p.subject||'').trim()||'No subject';cnt[k]=(cnt[k]||0)+1;if((p.cls||'').trim())cl.add(p.cls.trim().toUpperCase())});
+ $('kTot').textContent=rows.length;$('kWk').textContent=rows.filter(p=>new Date(p.updatedAt).getTime()>=wk).length;
+ $('kSub').textContent=Object.keys(cnt).filter(k=>k!=='No subject').length;$('kCls').textContent=cl.size;
+ if(!rows.length){sub.appendChild(el('p','dempty','No saved plans yet.'));rec.appendChild(el('p','dempty','Generate a lesson plan and click “Save plan” to see it here.'));return}
+ const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])),mx=top[0][1];
+ top.slice(0,8).forEach(([k,n])=>{const r=el('div','subj'),b=el('div'),i=el('i');i.style.width=(n/mx*100)+'%';b.appendChild(i);r.append(el('span','',k),b,el('em','',n));r.title=k+': '+n+' plan'+(n>1?'s':'');sub.appendChild(r)});
+ if(top.length>8)sub.appendChild(el('p','dempty','+ '+(top.length-8)+' more subjects'));
+ rows.slice(0,5).forEach(p=>{const r=el('div','sv'),n=el('span','',[p.subject,p.cls,p.title||'Untitled lesson'].filter(Boolean).join(' · ')+' ');
+  n.appendChild(el('small','','saved '+new Date(p.updatedAt).toLocaleString()));const o=el('button','','Open');o.type='button';
+  o.onclick=()=>window.openPlan?window.openPlan(p.id):setView('saved');
+  r.append(n,o);rec.appendChild(r)})};
+})();
 </script>
 <script type="module">
 import { login, logout, getUser, onAuthChange, AuthError } from 'https://esm.sh/@netlify/identity@2.0.0'
@@ -436,8 +510,8 @@ const auth=$('auth'),msg=$('amsg')
 const say=(t,err)=>{msg.textContent=t||'';msg.className=err?'err':''}
 const nameOf=u=>(u&&(u.userMetadata&&u.userMetadata.username))||(u&&u.name)||(u&&u.email)||''
 function show(u){
- if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);window.loadSaved&&window.loadSaved()}
- else{window.clearSaved&&window.clearSaved();auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
+ if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);$('burger').hidden=false;$('dname').textContent='Signed in as '+nameOf(u);$('dhi').textContent='Welcome, '+(String(nameOf(u)).split(/[\s@]/)[0]||'teacher');window.loadSaved&&window.loadSaved()}
+ else{window.clearSaved&&window.clearSaved();window.closeMenu&&window.closeMenu();$('burger').hidden=true;window.setView&&window.setView('dash',1);auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
 }
 function tab(up){$('fin').hidden=up;$('fup').hidden=!up;$('tin').className=up?'alt':'';$('tup').className=up?'':'alt';say('')}
 $('tin').onclick=()=>tab(false);$('tup').onclick=()=>tab(true)
