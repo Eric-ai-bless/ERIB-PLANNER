@@ -1,10 +1,30 @@
 import { admin as idAdmin, type User } from '@netlify/identity'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from './index.js'
-import { subscriptionPlans, usage, userSubscriptions } from './schema.js'
+import { appSettings, subscriptionPlans, usage, userSubscriptions } from './schema.js'
 
 // The owner's account. It is always an admin, and can make other users admins.
 export const OWNER_EMAIL = 'blessedtalent1997@gmail.com'
+
+export const SUSPENDED_MSG = 'Your account has been stopped by the admin. Please contact the admin to restore access.'
+
+// Admin settings (key/value).
+export async function getSettings(): Promise<Record<string, string>> {
+  const rows = await db.select().from(appSettings)
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]))
+}
+
+export async function setSetting(key: string, value: string) {
+  await db
+    .insert(appSettings)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: appSettings.key, set: { value, updatedAt: new Date() } })
+}
+
+export async function isSuspended(uid: string): Promise<boolean> {
+  const [r] = await db.select({ s: userSubscriptions.suspended }).from(userSubscriptions).where(eq(userSubscriptions.userId, uid))
+  return !!r?.s
+}
 
 export type Kind = 'plan' | 'notes' | 'helper'
 
@@ -57,12 +77,19 @@ export async function entitlement(uid: string) {
   const plans = await ensurePlans()
   const [sub] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, uid))
   const [u] = await db.select().from(usage).where(and(eq(usage.userId, uid), eq(usage.month, monthKey())))
-  return { ...resolve(plans, sub), month: monthKey(), used: { lessons: u?.lessons ?? 0, exercises: u?.exercises ?? 0 } }
+  return {
+    ...resolve(plans, sub),
+    suspended: !!sub?.suspended,
+    suspendedReason: sub?.suspended ? sub.suspendedReason : '',
+    month: monthKey(),
+    used: { lessons: u?.lessons ?? 0, exercises: u?.exercises ?? 0 },
+  }
 }
 
 // Atomically uses one unit of the monthly allowance. Returns an error message when the limit is reached.
 export async function consume(uid: string, kind: Kind): Promise<string | null> {
   const month = monthKey()
+  if (await isSuspended(uid)) return SUSPENDED_MSG
   if (kind === 'helper') {
     // Helper calls (reading a template, shortening a plan) are free but only alongside real generations.
     const r = await db
