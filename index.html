@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ERIB PLANNER</title>
+<title>ERIB CBC LESSON PLANNER</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/logo.png">
 <style>
 :root{--bg:#f5f7f4;--card:#fff;--ink:#1c2a22;--mut:#5b6b61;--line:#cfd8d2;--acc:#0b6b3a;--accink:#fff;--head:#e4e4e4;--warn:#9a5b00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a15;--card:#18241d;--ink:#e8efe9;--mut:#9fb0a5;--line:#2f4036;--acc:#4cc38a;--accink:#06210f;--head:#2a3a30;--warn:#e0a648}}
@@ -45,6 +47,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 #ubar{display:flex;align-items:center;gap:10px;font-size:13px}#ubar[hidden]{display:none}
 #ubar button{padding:6px 12px;background:transparent;color:var(--accink);border-color:var(--accink)}
 .hl{display:flex;align-items:center;gap:12px}
+.logo{width:56px;height:56px;flex:none;display:block;border-radius:50%;background:#fff}
+#auth .alogo{width:96px;height:96px;display:block;margin:0 auto 10px}#auth h2{text-align:center}#auth .sub{text-align:center}
+@media (max-width:520px){.logo{width:44px;height:44px}}
 #burger{width:42px;height:42px;padding:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;background:transparent;border:1px solid var(--accink);border-radius:8px;flex:none}
 #burger[hidden]{display:none}
 #burger span{display:block;width:20px;height:2px;background:var(--accink);border-radius:2px;transition:transform .2s,opacity .2s}
@@ -89,7 +94,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
 <body>
 <div id="auth">
  <div class="box">
-  <h2>ERIB PLANNER</h2><p class="sub">Sign in or create a free account to plan lessons.</p>
+  <img class="alogo" src="/assets/logo.png" alt="ERIB CBC Planner logo" width="96" height="96"><h2>ERIB CBC LESSON PLANNER</h2><p class="sub">Sign in or create a free account to plan lessons.</p>
   <div id="aload" class="sub">Loading…</div>
   <div id="aforms" hidden>
    <div class="tabs"><button type="button" id="tin">Sign in</button><button type="button" class="alt" id="tup">Create account</button></div>
@@ -109,10 +114,10 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
   </div>
  </div>
 </div>
-<header><div class="hl"><button type="button" id="burger" hidden aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button><div><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></div></div><div id="ubar" hidden><span>Signed in as <b id="uname"></b></span><button type="button" id="signout">Sign out</button></div></header>
+<header><div class="hl"><img class="logo" src="/assets/logo.png" alt="ERIB CBC Planner logo" width="56" height="56"><button type="button" id="burger" hidden aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button><div><h1>ERIB CBC LESSON PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></div></div><div id="ubar" hidden><span>Signed in as <b id="uname"></b></span><button type="button" id="signout">Sign out</button></div></header>
 <div id="scrim" hidden></div>
 <nav id="drawer" aria-label="Main menu" aria-hidden="true">
- <div class="dh">ERIB PLANNER</div><div class="du" id="dname"></div>
+ <div class="dh">ERIB CBC LESSON PLANNER</div><div class="du" id="dname"></div>
  <a href="#dashboard" data-v="dash">Dashboard</a>
  <a href="#new" data-v="new">New lesson plan</a>
  <a href="#saved" data-v="saved">My saved lesson plans</a>
