@@ -64,6 +64,20 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
 .subj{display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .subj i{display:block;height:10px;border-radius:0 4px 4px 0;background:var(--acc);min-width:4px}.subj em{font-style:normal;color:var(--mut);font-variant-numeric:tabular-nums}
 .dempty{font-size:13px;color:var(--mut)}
+#drawer a[hidden]{display:none}
+body[data-view=sub] #dash,body[data-view=sub] .vnew,body[data-view=sub] #saved,body[data-view=admin] #dash,body[data-view=admin] .vnew,body[data-view=admin] #saved,body:not([data-view=sub]) #subv,body:not([data-view=admin]) #admv{display:none!important}
+.use{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:6px 0}.use em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--mut)}
+.meter{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden}.meter i{display:block;height:100%;background:var(--acc)}.meter i.full{background:var(--warn)}
+.pcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:8px 0}
+.pcard{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg);display:flex;flex-direction:column;gap:4px}.pcard.cur{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.pcard b{font-size:17px}.pcard .pr{font-size:20px;font-weight:700;color:var(--acc)}.pcard small{color:var(--mut)}.pcard button{margin-top:auto}
+.atabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.atabs button{padding:6px 12px;font-size:13px;background:transparent;color:var(--acc)}.atabs button.on{background:var(--acc);color:var(--accink)}
+.arow{border-top:1px solid var(--line);padding:8px 0}.arow:first-child{border-top:0}.arow .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.arow .hd span{flex:1;min-width:200px;font-size:13px;word-break:break-word}.arow small{color:var(--mut)}.arow button{padding:4px 12px;font-size:13px}
+.aform{border:1px solid var(--line);border-radius:8px;padding:12px;margin:8px 0;background:var(--bg)}.aform input,.aform select,.aform textarea{background:var(--card)}
+label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input{width:auto;margin:0}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--acc);color:var(--acc);margin-left:4px}.badge.w{border-color:var(--warn);color:var(--warn)}
+.pre{white-space:pre-wrap;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:6px 0}
+.amsg{font-size:13px;color:var(--mut)}.amsg.err{color:var(--warn)}
 @media print{
  @page{size:A4;margin:8mm}
  body{background:#fff}header,#auth,#drawer,#scrim,#dash,.noprint{display:none!important}
@@ -102,6 +116,8 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
  <a href="#dashboard" data-v="dash">Dashboard</a>
  <a href="#new" data-v="new">New lesson plan</a>
  <a href="#saved" data-v="saved">My saved lesson plans</a>
+ <a href="#subscription" data-v="sub">Subscription</a>
+ <a href="#admin" data-v="admin" id="dadm" hidden>Admin</a>
  <div class="sp"></div>
  <a href="#" id="dsignout">Sign out</a>
 </nav>
@@ -110,12 +126,17 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
  <h2 id="dhi">Welcome</h2>
  <p class="note" style="margin-top:2px">Your lesson planning at a glance.</p>
  <div class="tiles">
+  <div class="tile"><small>My plan</small><b id="kPlan">–</b></div>
+  <div class="tile"><small>Lesson plans this month</small><b id="kLes">–</b></div>
+  <div class="tile"><small>Notes &amp; exercises this month</small><b id="kEx">–</b></div>
+ </div>
+ <div class="tiles">
   <div class="tile"><small>Saved lesson plans</small><b id="kTot">–</b></div>
   <div class="tile"><small>Saved in the last 7 days</small><b id="kWk">–</b></div>
   <div class="tile"><small>Subjects</small><b id="kSub">–</b></div>
   <div class="tile"><small>Classes</small><b id="kCls">–</b></div>
  </div>
- <div class="bar" style="margin:0"><button type="button" data-go="new">New lesson plan</button><button type="button" class="alt" data-go="saved">View saved plans</button></div>
+ <div class="bar" style="margin:0"><button type="button" data-go="new">New lesson plan</button><button type="button" class="alt" data-go="saved">View saved plans</button><button type="button" class="alt" data-go="sub">Upgrade plan</button></div>
  <h3>Plans by subject</h3><div id="dsub"><p class="dempty">Loading…</p></div>
  <h3>Recently saved</h3><div id="drec"><p class="dempty">Loading…</p></div>
 </section>
@@ -146,6 +167,7 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
  </div>
  <datalist id="subs"><option>English</option><option>Kinyarwanda</option><option>Kiswahili</option><option>French</option><option>Mathematics</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Geography</option><option>History and Citizenship</option><option>Entrepreneurship</option><option>Computer Science</option><option>Literature in English</option><option>Economics</option><option>General Studies</option><option>Religious Education</option><option>Physical Education and Sports</option><option>Music</option><option>Fine Art and Crafts</option></datalist>
  <div class="bar"><button id="go">Generate lesson plan</button><span id="msg"></span></div>
+ <p class="note" id="quota"></p>
  <p class="note" id="refs"></p>
  <p class="note">Without pasted text, Claude drafts the plan from its knowledge of the REB competence-based curriculum. Check the unit title, key unit competence and objectives against your syllabus before use, and edit anything directly in the preview.</p>
 </section>
@@ -155,6 +177,8 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
  <div id="svlist"></div>
 </section>
 
+<section class="card noprint" id="subv"><h2 style="margin:0;font-size:20px">My subscription</h2><div id="subbody"><p class="dempty">Loading…</p></div></section>
+<section class="card noprint" id="admv"><h2 style="margin:0 0 10px;font-size:20px">Admin</h2><div class="atabs" id="atabs"><button type="button" data-t="users">Users</button><button type="button" data-t="reqs">Upgrade requests</button><button type="button" data-t="plans">Subscription plans</button><button type="button" data-t="pay">Payment methods</button></div><div id="admbody"><p class="dempty">Loading…</p></div></section>
 <section class="card vnew" id="out" hidden>
  <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><button class="alt" id="sv">Save plan</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
  <div class="sheet"><div id="paper"></div></div>
@@ -166,8 +190,9 @@ body[data-view=dash] .vnew,body[data-view=dash] #saved,body[data-view=new] #dash
 function parseAIJson(t){t=String(t).replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();try{return JSON.parse(t)}catch(e){}
  const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){const x=t.slice(a,b+1);try{return JSON.parse(x)}catch(e){try{return JSON.parse(x.replace(/[\u0000-\u001f]/g,c=>c==='\n'?'\\n':c==='\t'?'\\t':''))}catch(e2){}}}
  throw new Error('the AI reply could not be read, please try again')}
-async function getSample(){return{json:async(prompt)=>{
- const r=await fetch('/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:String(prompt)})});
+async function getSample(){return{json:async(prompt,o)=>{const kind=(o&&o.kind)||'plan';
+ const r=await fetch('/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:String(prompt),kind})});
+ if(kind!=='helper')setTimeout(()=>window.loadAccount&&window.loadAccount(),1500);
  if(!r.ok){let m='server error '+r.status;try{const j=await r.json();if(j.error)m=j.error}catch(e){}throw new Error(m)}
  const rd=r.body.getReader(),dec=new TextDecoder();let t='';for(;;){const{done,value}=await rd.read();if(done)break;t+=dec.decode(value,{stream:true})}
  const ei=t.indexOf('\u0000ERROR:');if(ei>=0)throw new Error(t.slice(ei+7).trim()||'AI request failed');
@@ -235,7 +260,7 @@ async function generate(){
  if(!sample){msg('AI generation is not available right now. Please try again.',1);return}
  $('go').disabled=true;msg('Drafting your lesson plan…');
  try{
-  if(TPL.text&&!TPL.map){msg('Reading your template…');TPL.map=await sample.json(mapPrompt(TPL.text))}
+  if(TPL.text&&!TPL.map){msg('Reading your template…');TPL.map=await sample.json(mapPrompt(TPL.text),{kind:'helper'})}
   if(TPL.map&&TPL.map[lg]&&typeof TPL.map[lg]==='object'){const base=LB[lg],k={},m=TPL.map[lg];Object.keys(m).forEach(x=>{if(x in base&&x!=='name'&&typeof m[x]==='string'&&m[x].trim())k[x]=m[x].trim()});LB['c_'+lg]=Object.assign({},base,k,{name:base.name});lg='c_'+lg}
   if(TPL.map)$('tpls').textContent='Template languages found: '+(Object.keys(TPL.map).filter(x=>LB[x]).map(x=>LB[x].name).join(', ')||'none')+'. '+(lg.startsWith('c_')?'Using your template wording for '+LB[lg].name+'.':'No '+LB[lg].name+' version found in your template: using the built-in '+LB[lg].name+' labels.');
   if(BK){msg('Finding the unit in your book…');const kw=($('unitTitle').value+' '+$('topic').value).toLowerCase().split(/[^a-z\u00e0-\u00ff0-9]+/).filter(w=>w.length>3),many=BK.length>1,per=many?Math.max(1500,Math.floor(5500/BK.length)):6500,ord={dist:0,syllabus:1,guide:2,book:3,other:4},KL={dist:'CONTENT DISTRIBUTION',syllabus:'SYLLABUS',guide:"TEACHER'S GUIDE",book:"STUDENT'S BOOK",other:'OTHER DOCUMENT'};let ex='';
@@ -255,7 +280,7 @@ Reply with ONLY this JSON: {"unitTitle":"","kuc":"","title":"","obj":"","loc":"(
   ['kuc','title','obj','loc','mat','ref','desc','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(k=>D[k]=String(r[k]||'').replace(/\\n/g,'\n'));
   if(g('topic'))D.title=g('topic');
   $('out').hidden=false;$('nsec').hidden=true;window.LASTBOOK=book;PID=0;$('sv').textContent='Save plan';render();
-  for(let k=0;k<2&&fitPlan().fs<9.5;k++){msg('Shortening the plan so the text stays readable on one page…');try{const sub={};['obj','mat','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(x=>sub[x]=D[x]);const r2=await sample.json('Shorten these cells of a lesson plan so the whole plan fits one A4 page at 10 pt. Keep the meaning and the language ('+T.name+'). Lists keep lines starting with "- ", at most 3 lines per cell and 12 words per line; obj max 2 short sentences; mat one line. Return ONLY JSON with the same keys. Use \\n between lines.\n'+JSON.stringify(sub));Object.keys(sub).forEach(x=>{if(r2[x])D[x]=String(r2[x]).replace(/\\n/g,'\n')})}catch(e){break}}
+  for(let k=0;k<2&&fitPlan().fs<9.5;k++){msg('Shortening the plan so the text stays readable on one page…');try{const sub={};['obj','mat','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(x=>sub[x]=D[x]);const r2=await sample.json('Shorten these cells of a lesson plan so the whole plan fits one A4 page at 10 pt. Keep the meaning and the language ('+T.name+'). Lists keep lines starting with "- ", at most 3 lines per cell and 12 words per line; obj max 2 short sentences; mat one line. Return ONLY JSON with the same keys. Use \\n between lines.\n'+JSON.stringify(sub),{kind:'helper'});Object.keys(sub).forEach(x=>{if(r2[x])D[x]=String(r2[x]).replace(/\\n/g,'\n')})}catch(e){break}}
   render();msg('Done. Review and edit below.');
   $('out').scrollIntoView({behavior:'smooth'});
  }catch(err){msg('Could not generate the plan: '+((err&&err.message)||'please try again'),1)}
@@ -411,7 +436,7 @@ async function makeNotes(){
  m.style.color='';m.textContent='Preparing notes and exercises…';$('nb').disabled=true;
  const T=LK();
  const p="Prepare a student handout for ONE lesson of Rwanda's REB competence-based curriculum. WRITE EVERYTHING IN "+T.name.toUpperCase()+" and never mix in words of another language. Subject: "+D.subject+". Class: "+D.cls+". Unit: "+(D.unitTitle||'')+". Lesson title: "+(D.title||'')+". Learning objectives: "+(D.obj||'')+"."+(window.LASTBOOK?" Follow these reference excerpts from the REB documents (authoritative source; use their terminology):\n<<<"+String(window.LASTBOOK).slice(0,5000)+">>>\n":" Follow the REB revised syllabus and books for this class.")+"\nLayout markers, one per line: '# ' for the title, '## ' for section headings, '- ' for bullets, plain lines for paragraphs. Sections: (1) Lesson notes: key points, definitions, one or two worked examples, short summary. (2) Exercises: Part A five short knowledge questions; Part B three application or critical-thinking questions using Rwandan everyday context; Part C one homework or small project task. Number questions as plain lines like '1. ...'. (3) Marking guide: the answer and marks for every question. About 600 words in total. Return ONLY JSON {\"doc\":\"...\"} using \\n between lines.";
- try{const r=await sm.json(p);renderNotes(r.doc);m.textContent='Notes and exercises are ready below the plan.';$('nsec').scrollIntoView({behavior:'smooth'})}
+ try{const r=await sm.json(p,{kind:'notes'});renderNotes(r.doc);m.textContent='Notes and exercises are ready below the plan.';$('nsec').scrollIntoView({behavior:'smooth'})}
  catch(e){m.style.color='var(--warn)';m.textContent='Could not prepare notes: '+((e&&e.message)||'please try again')}
  $('nb').disabled=false}
 function notesXml(bl){
@@ -473,9 +498,9 @@ $('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
 </script>
 <script>
 (function(){
-const $=id=>document.getElementById(id),dr=$('drawer'),bg=$('scrim'),bu=$('burger'),V={dashboard:'dash',new:'new',saved:'saved'};
+const $=id=>document.getElementById(id),dr=$('drawer'),bg=$('scrim'),bu=$('burger'),V={dashboard:'dash',new:'new',saved:'saved',subscription:'sub',admin:'admin'};
 function menu(on){dr.classList.toggle('open',on);dr.setAttribute('aria-hidden',on?'false':'true');bg.hidden=!on;bu.setAttribute('aria-expanded',on?'true':'false');bu.setAttribute('aria-label',on?'Close menu':'Open menu');if(on){const a=dr.querySelector('a[aria-current]')||dr.querySelector('a');a&&a.focus()}}
-function setView(v,keep){if(!['dash','new','saved'].includes(v))v='dash';document.body.dataset.view=v;
+function setView(v,keep){if(!['dash','new','saved','sub','admin'].includes(v))v='dash';document.body.dataset.view=v;if(v==='sub'&&window.loadAccount)window.loadAccount();if(v==='admin'&&window.loadAdmin)window.loadAdmin();
  dr.querySelectorAll('a[data-v]').forEach(a=>a.dataset.v===v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
  const h=Object.keys(V).find(k=>V[k]===v);if(location.hash!=='#'+h)history.replaceState(null,'','#'+h);if(!keep)window.scrollTo(0,0)}
 window.setView=setView;window.closeMenu=()=>menu(false);
@@ -503,6 +528,151 @@ window.renderDash=function(rows){const sub=$('dsub'),rec=$('drec');sub.innerHTML
   r.append(n,o);rec.appendChild(r)})};
 })();
 </script>
+<script>
+// Subscription page (for every user) and Admin page (users, plans, payment methods, upgrade requests)
+(function(){
+const $=id=>document.getElementById(id);
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function btn(t,alt,fn){const b=el('button',alt?'alt':'',t);b.type='button';if(fn)b.onclick=fn;return b}
+async function call(url,method,body){const r=await fetch(url,{method:method||'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('server error '+r.status));return j}
+const lim=v=>v==null?'Unlimited':String(v);
+const money=p=>p.price?Number(p.price).toLocaleString()+' '+p.currency:'Free';
+const day=d=>d?new Date(d).toLocaleDateString():'';
+const nextMonth=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1).toLocaleDateString()};
+function form(fields,vals,label,onsave,oncancel){const f=el('form','aform'),g=el('div','grid');
+ fields.forEach(d=>{const l=el('label',d.wide?'wide':'',d.label);let i;
+  if(d.type==='textarea'){i=el('textarea');i.rows=3}
+  else if(d.type==='select'){i=el('select');d.opts.forEach(([v,t])=>{const o=el('option','',t);o.value=v;i.appendChild(o)})}
+  else{i=el('input');i.type=d.type||'text';if(d.type==='number')i.min='0'}
+  if(d.ph)i.placeholder=d.ph;i.name=d.k;const v=vals[d.k];
+  if(d.type==='checkbox'){i.checked=!!v;l.classList.add('chk');l.prepend(i)}else{i.value=v==null?'':v;l.appendChild(i)}
+  if(d.hint)l.appendChild(el('small','',d.hint));g.appendChild(l)});
+ const bar=el('div','bar'),sb=el('button','',label),m=el('span','amsg');sb.type='submit';bar.append(sb);
+ if(oncancel)bar.append(btn('Cancel',1,oncancel));bar.append(m);f.append(g,bar);
+ f.onsubmit=async e=>{e.preventDefault();const o={};fields.forEach(d=>{const i=f.elements[d.k];o[d.k]=d.type==='checkbox'?i.checked:i.value});
+  sb.disabled=true;m.className='amsg';m.textContent='Saving…';try{await onsave(o);m.textContent=''}catch(x){m.textContent=x.message;m.className='amsg err'}sb.disabled=false};
+ return f}
+function meter(lbl,used,max){const r=el('div','use'),b=el('div','meter'),i=el('i');
+ i.style.width=max==null?'4%':(max?Math.min(100,used/max*100):100)+'%';if(max!=null&&used>=max)i.className='full';b.appendChild(i);
+ r.append(el('span','',lbl),b,el('em','',used+' / '+lim(max)));return r}
+
+// ---------- user subscription ----------
+let ACC=null,PICK=0;
+window.clearAccount=()=>{ACC=null;PICK=0;$('dadm').hidden=true;['kPlan','kLes','kEx'].forEach(k=>$(k).textContent='–');$('quota').textContent=''};
+window.loadAccount=async function(){try{ACC=await call('/api/account')}catch(e){$('subbody').innerHTML='';$('subbody').appendChild(el('p','dempty','Could not load your subscription: '+e.message));return}
+ renderAcc();if(document.body.dataset.view==='admin'&&ACC.isAdmin&&!ADM)loadAdmin()};
+function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
+ $('kPlan').textContent=a.plan?a.plan.name:'–';$('kLes').textContent=a.used.lessons+' / '+lim(a.lessonLimit);$('kEx').textContent=a.used.exercises+' / '+lim(a.exerciseLimit);
+ $('quota').textContent=(a.plan?a.plan.name+' plan: ':'')+(a.lessonLimit==null?'unlimited lesson plans':Math.max(0,a.lessonLimit-a.used.lessons)+' of '+a.lessonLimit+' lesson plans left this month')+(a.exerciseLimit==null?', unlimited notes & exercises.':', '+Math.max(0,a.exerciseLimit-a.used.exercises)+' of '+a.exerciseLimit+' notes & exercises left.');
+ s.innerHTML='';
+ const head=el('p','note','Current plan: ');head.appendChild(el('b','',a.plan?a.plan.name:'None'));if(a.customLimits)head.appendChild(el('span','badge','custom limits'));
+ head.append(a.expiresAt?' · active until '+day(a.expiresAt):'');s.appendChild(head);
+ if(a.expired)s.appendChild(el('p','note','Your paid plan has expired, so the default plan limits apply again. Choose a plan below to renew.'));
+ s.appendChild(el('h3','','This month'));
+ s.append(meter('Lesson plans',a.used.lessons,a.lessonLimit),meter('Notes & exercises',a.used.exercises,a.exerciseLimit));
+ s.appendChild(el('p','note','Limits reset on '+nextMonth()+'.'));
+ const pend=a.requests.find(r=>r.status==='pending');
+ s.appendChild(el('h3','','Plans'));
+ const cards=el('div','pcards');
+ a.plans.forEach(p=>{const c=el('div','pcard'+(a.plan&&a.plan.id===p.id?' cur':''));c.append(el('b','',p.name),el('div','pr',money(p)),el('small','',p.price?'for '+p.durationDays+' days':'no payment needed'));
+  if(p.description)c.appendChild(el('small','',p.description));
+  c.append(el('div','','Lesson plans: '+lim(p.lessonLimit)+' / month'),el('div','','Notes & exercises: '+lim(p.exerciseLimit)+' / month'));
+  if(a.plan&&a.plan.id===p.id&&!a.customLimits)c.appendChild(el('small','','Your current plan'));
+  else if(p.price>0){const b=btn(pend?'Request pending':'Choose this plan',0,()=>{PICK=p.id;renderAcc();$('upf')&&$('upf').scrollIntoView({behavior:'smooth'})});b.disabled=!!pend;c.appendChild(b)}
+  cards.appendChild(c)});
+ s.appendChild(cards);
+ if(pend)s.appendChild(el('p','note','Your upgrade request is waiting for the admin to confirm your payment.'));
+ const pk=a.plans.find(p=>p.id===PICK);
+ if(pk&&!pend){const box=el('div','aform');box.id='upf';box.appendChild(el('b','','Upgrade to '+pk.name+' ('+money(pk)+')'));
+  if(!a.paymentMethods.length)box.appendChild(el('p','note','No payment methods have been set up yet. Please contact the admin.'));
+  else{box.appendChild(el('p','note','1. Pay using one of the methods below. 2. Enter the transaction reference so the admin can confirm it. Your plan is upgraded once the admin approves.'));
+   const det=el('div','pre');
+   const f=form([{k:'paymentMethodId',label:'Payment method',type:'select',opts:a.paymentMethods.map(m=>[m.id,m.name])},{k:'reference',label:'Transaction reference / ID',ph:'e.g. MoMo transaction ID'},{k:'message',label:'Message to the admin (optional)',type:'textarea',wide:1}],{},'Send upgrade request',
+    async o=>{await call('/api/account','POST',{planId:pk.id,paymentMethodId:+o.paymentMethodId,reference:o.reference,message:o.message});PICK=0;await window.loadAccount()},()=>{PICK=0;renderAcc()});
+   const sel=f.elements.paymentMethodId,upd=()=>{const m=a.paymentMethods.find(x=>String(x.id)===sel.value);det.textContent=m?(m.details||m.name):''};sel.onchange=upd;upd();
+   box.append(det,f)}
+  s.appendChild(box)}
+ if(a.requests.length){s.appendChild(el('h3','','My upgrade requests'));
+  a.requests.forEach(r=>{const p=a.plans.find(x=>x.id===r.planId),row=el('div','arow'),h=el('div','hd'),t=el('span','',(p?p.name:'Plan #'+r.planId)+' · '+day(r.createdAt)+(r.reference?' · ref '+r.reference:''));
+   t.appendChild(el('span','badge'+(r.status==='rejected'?' w':''),r.status));h.appendChild(t);row.appendChild(h);s.appendChild(row)})}
+}
+
+// ---------- admin ----------
+let ADM=null,TAB='users',EDIT=null,Q='';
+async function loadAdmin(){const b=$('admbody');if(!ADM)b.innerHTML='<p class="dempty">Loading…</p>';
+ try{ADM=await call('/api/admin')}catch(e){b.innerHTML='';b.appendChild(el('p','dempty','Could not load the admin page: '+e.message));return}renderAdm()}
+window.loadAdmin=loadAdmin;
+async function act(body){await call('/api/admin','POST',body);EDIT=null;await loadAdmin();window.loadAccount()}
+document.querySelectorAll('#atabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;EDIT=null;renderAdm()});
+const planOpts=()=>ADM.plans.map(p=>[p.id,p.name+(p.isDefault?' (default)':'')+(p.active?'':' (hidden)')]);
+function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
+ const pend=A.requests.filter(r=>r.status==='pending').length;
+ document.querySelectorAll('#atabs button').forEach(x=>{x.classList.toggle('on',x.dataset.t===TAB);if(x.dataset.t==='reqs')x.textContent='Upgrade requests'+(pend?' ('+pend+')':'')});
+ const pn=id=>{const p=A.plans.find(x=>x.id===id);return p?p.name:'(deleted plan)'};
+ if(TAB==='users'){
+  b.appendChild(el('p','note',A.users.length+' users · usage shown for '+A.month+' · '+A.users.filter(u=>u.isAdmin).length+' admins'));
+  const q=el('input');q.placeholder='Search by name or email';q.value=Q;q.oninput=()=>{Q=q.value;draw()};b.appendChild(q);
+  const list=el('div');b.appendChild(list);
+  function draw(){list.innerHTML='';const k=Q.trim().toLowerCase();
+   A.users.filter(u=>!k||(u.name+' '+u.email).toLowerCase().includes(k)).forEach(u=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');
+    t.append(el('b','',u.name||'(no name)'),' '+(u.email||''));if(u.isAdmin)t.appendChild(el('span','badge',u.isOwner?'owner':'admin'));if(u.customLimits)t.appendChild(el('span','badge','custom'));
+    t.appendChild(el('br'));t.appendChild(el('small','',(u.plan?u.plan.name:'–')+(u.expiresAt?' until '+day(u.expiresAt):'')+(u.expired?' (expired)':'')+' · lesson plans '+u.used.lessons+'/'+lim(u.lessonLimit)+' · exercises '+u.used.exercises+'/'+lim(u.exerciseLimit)+' · '+u.saved+' saved · joined '+day(u.createdAt)));
+    h.append(t,btn(EDIT===u.id?'Close':'Edit',0,()=>{EDIT=EDIT===u.id?null:u.id;draw()}));row.appendChild(h);
+    if(EDIT===u.id){const s=u.sub||{};
+     row.appendChild(form([
+      {k:'planId',label:'Subscription plan',type:'select',opts:[['','Default plan']].concat(planOpts())},
+      {k:'expiresAt',label:'Plan ends on (empty = never)',type:'date'},
+      {k:'customLimits',label:'Use custom limits for this user',type:'checkbox',wide:1},
+      {k:'lessonLimit',label:'Custom lesson plans / month',type:'number',ph:'empty = unlimited'},
+      {k:'exerciseLimit',label:'Custom notes & exercises / month',type:'number',ph:'empty = unlimited'},
+      {k:'resetUsage',label:'Reset this month’s usage to zero',type:'checkbox',wide:1},
+      {k:'note',label:'Admin note',wide:1}],
+      {planId:s.planId||'',expiresAt:s.expiresAt?String(s.expiresAt).slice(0,10):'',customLimits:s.customLimits,lessonLimit:s.lessonLimit,exerciseLimit:s.exerciseLimit,note:s.note},'Save subscription',
+      o=>act(Object.assign({action:'setUserPlan',userId:u.id},o,{expiresAt:o.expiresAt?o.expiresAt+'T23:59:59':null})),()=>{EDIT=null;draw()}));
+     const bar=el('div','bar');
+     if(!u.isOwner)bar.appendChild(btn(u.isAdmin?'Remove admin role':'Make admin',1,async e=>{e.target.disabled=true;try{await act({action:'setRole',userId:u.id,admin:!u.isAdmin})}catch(x){alert(x.message);e.target.disabled=false}}));
+     if(!u.isOwner&&u.id!==A.me)bar.appendChild(btn('Delete user',1,async e=>{if(!confirm('Delete '+(u.name||u.email)+' and all their saved lesson plans? This cannot be undone.'))return;e.target.disabled=true;try{await act({action:'deleteUser',userId:u.id})}catch(x){alert(x.message);e.target.disabled=false}}));
+     row.appendChild(bar)}
+    list.appendChild(row)});
+   if(!list.children.length)list.appendChild(el('p','dempty','No users found.'))}
+  draw()}
+ if(TAB==='reqs'){
+  if(!A.requests.length)b.appendChild(el('p','dempty','No upgrade requests yet.'));
+  const pm=id=>{const m=A.paymentMethods.find(x=>x.id===id);return m?m.name:''};
+  [...A.requests].sort((x,y)=>(x.status==='pending'?0:1)-(y.status==='pending'?0:1)).forEach(r=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');
+   t.append(el('b','',r.name||r.email),' '+r.email);t.appendChild(el('span','badge'+(r.status==='rejected'?' w':''),r.status));t.appendChild(el('br'));
+   t.appendChild(el('small','','Wants '+pn(r.planId)+(pm(r.paymentMethodId)?' · paid with '+pm(r.paymentMethodId):'')+(r.reference?' · ref: '+r.reference:' · no reference')+' · '+new Date(r.createdAt).toLocaleString()));
+   if(r.message){t.appendChild(el('br'));t.appendChild(el('small','','“'+r.message+'”'))}
+   h.appendChild(t);
+   if(r.status==='pending'){const go=ok=>async e=>{if(ok&&!confirm('Approve and move this user to '+pn(r.planId)+'?'))return;e.target.disabled=true;try{await act({action:'decideRequest',id:r.id,approve:ok})}catch(x){alert(x.message);e.target.disabled=false}};
+    h.append(btn('Approve',0,go(true)),btn('Reject',1,go(false)))}
+   row.appendChild(h);b.appendChild(row)})}
+ if(TAB==='plans'){
+  b.appendChild(el('p','note','Limits count per calendar month. Leave a limit empty for unlimited, or set 0 to block that feature. The default plan is given to every new user and to users whose paid plan has ended.'));
+  const F=[{k:'name',label:'Plan name'},{k:'price',label:'Price',type:'number'},{k:'currency',label:'Currency'},{k:'durationDays',label:'Duration (days)',type:'number'},
+   {k:'lessonLimit',label:'Lesson plans / month',type:'number',ph:'empty = unlimited'},{k:'exerciseLimit',label:'Notes & exercises / month',type:'number',ph:'empty = unlimited'},
+   {k:'sortOrder',label:'Display order',type:'number'},{k:'description',label:'Description',wide:1},{k:'isDefault',label:'Default plan for new users',type:'checkbox'},{k:'active',label:'Visible to users',type:'checkbox'}];
+  b.appendChild(btn('+ Add plan',0,()=>{EDIT='newplan';renderAdm()}));
+  if(EDIT==='newplan')b.appendChild(form(F,{currency:'RWF',durationDays:30,active:true,lessonLimit:10,exerciseLimit:10,sortOrder:A.plans.length},'Create plan',o=>act(Object.assign({action:'savePlan'},o)),()=>{EDIT=null;renderAdm()}));
+  A.plans.forEach(p=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');t.append(el('b','',p.name),' · '+money(p)+' / '+p.durationDays+' days');
+   if(p.isDefault)t.appendChild(el('span','badge','default'));if(!p.active)t.appendChild(el('span','badge w','hidden'));
+   t.appendChild(el('br'));t.appendChild(el('small','','Lesson plans '+lim(p.lessonLimit)+' / month · notes & exercises '+lim(p.exerciseLimit)+' / month · '+A.users.filter(u=>u.plan&&u.plan.id===p.id).length+' users'+(p.description?' · '+p.description:'')));
+   h.append(t,btn(EDIT==='p'+p.id?'Close':'Edit',0,()=>{EDIT=EDIT==='p'+p.id?null:'p'+p.id;renderAdm()}));
+   if(!p.isDefault)h.appendChild(btn('Delete',1,async e=>{if(!confirm('Delete the plan “'+p.name+'”? Users on it go back to the default plan.'))return;try{await act({action:'deletePlan',id:p.id})}catch(x){alert(x.message)}}));
+   row.appendChild(h);if(EDIT==='p'+p.id)row.appendChild(form(F,p,'Save plan',o=>act(Object.assign({action:'savePlan',id:p.id},o)),()=>{EDIT=null;renderAdm()}));b.appendChild(row)})}
+ if(TAB==='pay'){
+  b.appendChild(el('p','note','Payment methods are shown to users when they request an upgrade. Put the instructions in the details, e.g. the MoMo number and account name.'));
+  const F=[{k:'name',label:'Name',ph:'e.g. MTN Mobile Money'},{k:'sortOrder',label:'Display order',type:'number'},{k:'details',label:'Payment details / instructions',type:'textarea',wide:1,ph:'e.g. Send to 078XXXXXXX (Name). Use your email as the reason.'},{k:'active',label:'Visible to users',type:'checkbox'}];
+  b.appendChild(btn('+ Add payment method',0,()=>{EDIT='newpm';renderAdm()}));
+  if(EDIT==='newpm')b.appendChild(form(F,{active:true,sortOrder:A.paymentMethods.length},'Create payment method',o=>act(Object.assign({action:'savePayment'},o)),()=>{EDIT=null;renderAdm()}));
+  if(!A.paymentMethods.length)b.appendChild(el('p','dempty','No payment methods yet. Users cannot request an upgrade until you add one.'));
+  A.paymentMethods.forEach(m=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');t.appendChild(el('b','',m.name));if(!m.active)t.appendChild(el('span','badge w','hidden'));
+   h.append(t,btn(EDIT==='m'+m.id?'Close':'Edit',0,()=>{EDIT=EDIT==='m'+m.id?null:'m'+m.id;renderAdm()}),btn('Delete',1,async()=>{if(!confirm('Delete “'+m.name+'”?'))return;try{await act({action:'deletePayment',id:m.id})}catch(x){alert(x.message)}}));
+   row.appendChild(h);if(m.details)row.appendChild(el('div','pre',m.details));
+   if(EDIT==='m'+m.id)row.appendChild(form(F,m,'Save payment method',o=>act(Object.assign({action:'savePayment',id:m.id},o)),()=>{EDIT=null;renderAdm()}));b.appendChild(row)})}
+}
+})();
+</script>
 <script type="module">
 import { login, logout, getUser, onAuthChange, AuthError } from 'https://esm.sh/@netlify/identity@2.0.0'
 const $=id=>document.getElementById(id)
@@ -510,8 +680,8 @@ const auth=$('auth'),msg=$('amsg')
 const say=(t,err)=>{msg.textContent=t||'';msg.className=err?'err':''}
 const nameOf=u=>(u&&(u.userMetadata&&u.userMetadata.username))||(u&&u.name)||(u&&u.email)||''
 function show(u){
- if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);$('burger').hidden=false;$('dname').textContent='Signed in as '+nameOf(u);$('dhi').textContent='Welcome, '+(String(nameOf(u)).split(/[\s@]/)[0]||'teacher');window.loadSaved&&window.loadSaved()}
- else{window.clearSaved&&window.clearSaved();window.closeMenu&&window.closeMenu();$('burger').hidden=true;window.setView&&window.setView('dash',1);auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
+ if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);$('burger').hidden=false;$('dname').textContent='Signed in as '+nameOf(u);$('dhi').textContent='Welcome, '+(String(nameOf(u)).split(/[\s@]/)[0]||'teacher');window.loadSaved&&window.loadSaved();window.loadAccount&&window.loadAccount()}
+ else{window.clearAccount&&window.clearAccount();window.clearSaved&&window.clearSaved();window.closeMenu&&window.closeMenu();$('burger').hidden=true;window.setView&&window.setView('dash',1);auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
 }
 function tab(up){$('fin').hidden=up;$('fup').hidden=!up;$('tin').className=up?'alt':'';$('tup').className=up?'':'alt';say('')}
 $('tin').onclick=()=>tab(false);$('tup').onclick=()=>tab(true)

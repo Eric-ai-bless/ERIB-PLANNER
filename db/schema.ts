@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, timestamp, jsonb, index, integer, boolean, primaryKey } from 'drizzle-orm/pg-core'
 
 // Lesson plans saved by signed-in teachers. `plan` holds every field of the plan
 // (as shown in the editable preview); `notes` holds the prepared notes & exercises.
@@ -17,4 +17,76 @@ export const lessonPlans = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (t) => [index('lesson_plans_user_idx').on(t.userId, t.updatedAt)],
+)
+
+// Subscription plans the admin can create and edit. A limit of null means unlimited.
+// Limits count per calendar month.
+export const subscriptionPlans = pgTable('subscription_plans', {
+  id: serial().primaryKey(),
+  name: text().notNull(),
+  description: text().notNull().default(''),
+  price: integer().notNull().default(0),
+  currency: text().notNull().default('RWF'),
+  durationDays: integer('duration_days').notNull().default(30),
+  lessonLimit: integer('lesson_limit'),
+  exerciseLimit: integer('exercise_limit'),
+  isDefault: boolean('is_default').notNull().default(false),
+  active: boolean().notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// Payment methods shown to users when they ask for an upgrade (e.g. MTN MoMo, bank).
+export const paymentMethods = pgTable('payment_methods', {
+  id: serial().primaryKey(),
+  name: text().notNull(),
+  details: text().notNull().default(''),
+  active: boolean().notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// The plan each user is on. Users without a row are on the default plan.
+// lessonLimit / exerciseLimit here override the plan's limits for that one user.
+export const userSubscriptions = pgTable('user_subscriptions', {
+  userId: text('user_id').primaryKey(),
+  planId: integer('plan_id'),
+  lessonLimit: integer('lesson_limit'),
+  exerciseLimit: integer('exercise_limit'),
+  customLimits: boolean('custom_limits').notNull().default(false),
+  expiresAt: timestamp('expires_at'),
+  note: text().notNull().default(''),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Monthly usage counters. month is 'YYYY-MM'.
+export const usage = pgTable(
+  'usage',
+  {
+    userId: text('user_id').notNull(),
+    month: text().notNull(),
+    lessons: integer().notNull().default(0),
+    exercises: integer().notNull().default(0),
+    helpers: integer().notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.month] })],
+)
+
+// Upgrade requests sent by users (with their payment reference) for the admin to approve.
+export const upgradeRequests = pgTable(
+  'upgrade_requests',
+  {
+    id: serial().primaryKey(),
+    userId: text('user_id').notNull(),
+    email: text().notNull().default(''),
+    name: text().notNull().default(''),
+    planId: integer('plan_id').notNull(),
+    paymentMethodId: integer('payment_method_id'),
+    reference: text().notNull().default(''),
+    message: text().notNull().default(''),
+    status: text().notNull().default('pending'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    decidedAt: timestamp('decided_at'),
+  },
+  (t) => [index('upgrade_requests_status_idx').on(t.status, t.createdAt)],
 )
