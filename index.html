@@ -33,16 +33,47 @@ button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cu
 #paper td.h{background:#e4e4e4;font-weight:bold}#paper td.i{font-style:italic;text-align:center}
 #paper td[contenteditable]:focus{outline:2px solid #0b6b3a;outline-offset:-2px;background:#fffbe0}
 #nbox{background:#fff;color:#000;padding:16px;border-radius:6px;font:15px/1.5 "Times New Roman",serif}#nbox [data-t=h1]{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}#nbox [data-t=h2]{font-size:17px;font-weight:700;margin-top:12px}#nbox [data-t=li]{padding-left:18px;text-indent:-12px}#nbox [data-t=li]::before{content:"\2022  "}
+#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#auth[hidden]{display:none}
+#auth .box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
+#auth h2{margin:0 0 2px;color:var(--acc);font-size:22px}#auth .sub{margin:0 0 16px;color:var(--mut);font-size:13px}
+#auth .tabs{display:flex;gap:6px;margin-bottom:14px}#auth .tabs button{flex:1;padding:8px}
+#auth form label{margin-bottom:10px}#auth form button[type=submit]{width:100%;margin-top:4px}
+#amsg{min-height:18px;font-size:13px;margin:10px 0 0;color:var(--mut)}#amsg.err{color:var(--warn)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#ubar{display:flex;align-items:center;gap:10px;font-size:13px}#ubar[hidden]{display:none}
+#ubar button{padding:6px 12px;background:transparent;color:var(--accink);border-color:var(--accink)}
 @media print{
  @page{size:A4;margin:8mm}
- body{background:#fff}header,.noprint{display:none!important}
+ body{background:#fff}header,#auth,.noprint{display:none!important}
  main{padding:0;max-width:none}.card{border:0;padding:0;margin:0}.sheet{overflow:visible}
  #paper{min-width:0;padding:0;font-size:8.5pt}
 }
 </style>
 </head>
 <body>
-<header><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></header>
+<div id="auth">
+ <div class="box">
+  <h2>ERIB PLANNER</h2><p class="sub">Sign in or create a free account to plan lessons.</p>
+  <div id="aload" class="sub">Loading…</div>
+  <div id="aforms" hidden>
+   <div class="tabs"><button type="button" id="tin">Sign in</button><button type="button" class="alt" id="tup">Create account</button></div>
+   <form id="fin" autocomplete="on">
+    <label>Email<input id="inEmail" type="email" autocomplete="email" required></label>
+    <label>Password<input id="inPass" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Sign in</button>
+   </form>
+   <form id="fup" hidden autocomplete="on">
+    <label>Username<input id="upUser" autocomplete="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_.\-]{3,30}" title="3–30 letters, numbers, dot, dash or underscore"></label>
+    <label>Email<input id="upEmail" type="email" autocomplete="email" required></label>
+    <label>Password<input id="upPass" type="password" autocomplete="new-password" required minlength="6"></label>
+    <button type="submit">Create account</button>
+   </form>
+   <p id="amsg"></p>
+  </div>
+ </div>
+</div>
+<header><div><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></div><div id="ubar" hidden><span>Signed in as <b id="uname"></b></span><button type="button" id="signout">Sign out</button></div></header>
 <main>
 <section class="card noprint">
  <div class="grid">
@@ -354,6 +385,38 @@ $('nb').onclick=makeNotes;
 $('nw').onclick=()=>save(()=>mkWord(notesXml(readNotes())),'.docx','Notes_Exercises_');
 $('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
 
+</script>
+<script type="module">
+import { login, logout, getUser, onAuthChange, AuthError } from 'https://esm.sh/@netlify/identity@2.0.0'
+const $=id=>document.getElementById(id)
+const auth=$('auth'),msg=$('amsg')
+const say=(t,err)=>{msg.textContent=t||'';msg.className=err?'err':''}
+const nameOf=u=>(u&&(u.userMetadata&&u.userMetadata.username))||(u&&u.name)||(u&&u.email)||''
+function show(u){
+ if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u)}
+ else{auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
+}
+function tab(up){$('fin').hidden=up;$('fup').hidden=!up;$('tin').className=up?'alt':'';$('tup').className=up?'':'alt';say('')}
+$('tin').onclick=()=>tab(false);$('tup').onclick=()=>tab(true)
+const busy=(f,on)=>f.querySelectorAll('button,input').forEach(e=>e.disabled=on)
+async function doLogin(email,password){
+ try{show(await login(email,password))}
+ catch(e){say(e instanceof AuthError&&(e.status===401||e.status===400)?'Wrong email or password.':(e.message||'Sign in failed.'),true)}
+}
+$('fin').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);say('Signing in…')
+ await doLogin($('inEmail').value.trim(),$('inPass').value);busy(f,false)}
+$('fup').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);say('Creating account…')
+ const email=$('upEmail').value.trim(),password=$('upPass').value
+ try{
+  const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('upUser').value.trim(),email,password})})
+  const j=await r.json().catch(()=>({}))
+  if(!r.ok)say(j.error||'Could not create the account.',true)
+  else{say('Account created. Signing you in…');await doLogin(email,password)}
+ }catch(e){say('Network error, please try again.',true)}
+ busy(f,false)}
+$('signout').onclick=async()=>{try{await logout()}catch(e){}show(null);tab(false)}
+onAuthChange((ev,u)=>{if(ev==='logout')show(null);else if(u)show(u)})
+try{show(await getUser())}catch(e){show(null)}
 </script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>

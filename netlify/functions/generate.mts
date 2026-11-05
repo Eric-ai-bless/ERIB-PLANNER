@@ -1,10 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Config } from '@netlify/functions'
+import { getUser } from '@netlify/identity'
 
 const anthropic = new Anthropic()
 
 export default async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+  const user = await getUser()
+  if (!user) return Response.json({ error: 'Please sign in to generate lesson plans.' }, { status: 401 })
   let prompt = ''
   try {
     const body = await req.json()

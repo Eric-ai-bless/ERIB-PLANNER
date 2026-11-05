@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.60.0"
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@netlify/identity": "^2.0.0"
   },
   "devDependencies": {
     "@netlify/functions": "^6.1.0"
