@@ -82,6 +82,18 @@ button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cu
 <section class="card" id="nsec" hidden><div class="bar noprint" style="margin:0 0 10px"><b>Notes &amp; exercises (with marking guide)</b><button id="nw">Download Word (.docx)</button><button class="alt" id="np">Download PDF</button></div><div id="nbox" contenteditable="true"></div><p class="note noprint">Click any line to edit before downloading.</p></section>
 </main>
 <script>
+// AI generation through the site's Netlify Function (Claude via Netlify AI Gateway)
+function parseAIJson(t){t=String(t).replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();try{return JSON.parse(t)}catch(e){}
+ const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){const x=t.slice(a,b+1);try{return JSON.parse(x)}catch(e){try{return JSON.parse(x.replace(/[\u0000-\u001f]/g,c=>c==='\n'?'\\n':c==='\t'?'\\t':''))}catch(e2){}}}
+ throw new Error('the AI reply could not be read, please try again')}
+async function getSample(){return{json:async(prompt)=>{
+ const r=await fetch('/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:String(prompt)})});
+ if(!r.ok){let m='server error '+r.status;try{const j=await r.json();if(j.error)m=j.error}catch(e){}throw new Error(m)}
+ const rd=r.body.getReader(),dec=new TextDecoder();let t='';for(;;){const{done,value}=await rd.read();if(done)break;t+=dec.decode(value,{stream:true})}
+ const ei=t.indexOf('\u0000ERROR:');if(ei>=0)throw new Error(t.slice(ei+7).trim()||'AI request failed');
+ return parseAIJson(t)}}}
+</script>
+<script>
 const $=id=>document.getElementById(id);
 const D={};let U=24;
 $('date').value=new Date().toISOString().slice(0,10);
@@ -140,7 +152,7 @@ async function generate(){
  const dur=+g('dur')||40,a=Math.round(dur*.25),d=dur-2*a;let lg=pickLang(),T,book=$('book').value.trim().slice(0,5000);
  try{localStorage.setItem('lp',JSON.stringify({school:g('school'),teacher:g('teacher'),term:$('term').value}))}catch(e){}
  const sample=await getSample();
- if(!sample){msg('AI generation is not available in this view. Open the page from its claude.ai link.',1);return}
+ if(!sample){msg('AI generation is not available right now. Please try again.',1);return}
  $('go').disabled=true;msg('Drafting your lesson plan…');
  try{
   if(TPL.text&&!TPL.map){msg('Reading your template…');TPL.map=await sample.json(mapPrompt(TPL.text))}
