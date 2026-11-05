@@ -99,7 +99,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
 <div id="auth">
  <div class="box">
   <img class="alogo" src="/assets/logo.png" alt="ERIB CBC Planner logo" width="96" height="96"><h2>ERIB CBC LESSON PLANNER</h2><p class="sub">Sign in or create a free account to plan lessons.</p>
-  <div id="aload" class="sub">Loading…</div>
+  <div id="aload" class="sub">Loading sign-in…</div>
   <div id="aforms" hidden>
    <div class="tabs"><button type="button" id="tin">Sign in</button><button type="button" class="alt" id="tup">Create account</button></div>
    <form id="fin" autocomplete="on">
@@ -114,7 +114,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
     <label>Password<input id="upPass" type="password" autocomplete="new-password" required minlength="6"></label>
     <button type="submit">Create account</button>
    </form>
-   <p id="amsg"></p>
+   <p id="amsg" role="status" aria-live="polite"></p>
   </div>
  </div>
 </div>
@@ -733,40 +733,6 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
 }
 })();
 </script>
-<script type="module">
-import { login, logout, getUser, onAuthChange, AuthError } from 'https://esm.sh/@netlify/identity@2.0.0'
-const $=id=>document.getElementById(id)
-const auth=$('auth'),msg=$('amsg')
-const say=(t,err)=>{msg.textContent=t||'';msg.className=err?'err':''}
-const nameOf=u=>(u&&(u.userMetadata&&u.userMetadata.username))||(u&&u.name)||(u&&u.email)||''
-function show(u){
- if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);$('burger').hidden=false;$('dname').textContent='Signed in as '+nameOf(u);$('dhi').textContent='Welcome, '+(String(nameOf(u)).split(/[\s@]/)[0]||'teacher');window.loadSaved&&window.loadSaved();window.loadAccount&&window.loadAccount()}
- else{window.clearAccount&&window.clearAccount();window.clearSaved&&window.clearSaved();window.closeMenu&&window.closeMenu();$('burger').hidden=true;window.setView&&window.setView('dash',1);auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
-}
-function tab(up){$('fin').hidden=up;$('fup').hidden=!up;$('tin').className=up?'alt':'';$('tup').className=up?'':'alt';say('')}
-$('tin').onclick=()=>tab(false);$('tup').onclick=()=>tab(true)
-const busy=(f,on)=>f.querySelectorAll('button,input').forEach(e=>e.disabled=on)
-async function doLogin(email,password){
- try{show(await login(email,password))}
- catch(e){say(e instanceof AuthError&&(e.status===401||e.status===400)?'Wrong email or password.':(e.message||'Sign in failed.'),true)}
-}
-$('fin').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);say('Signing in…')
- await doLogin($('inEmail').value.trim(),$('inPass').value);busy(f,false)}
-$('fup').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;busy(f,true);say('Creating account…')
- const email=$('upEmail').value.trim(),password=$('upPass').value
- try{
-  const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({firstName:$('upFirst').value.trim(),lastName:$('upLast').value.trim(),email,password})})
-  const j=await r.json().catch(()=>({}))
-  if(!r.ok)say(j.error||'Could not create the account.',true)
-  else{say('Account created. Signing you in…');await doLogin(email,password)}
- }catch(e){say('Network error, please try again.',true)}
- busy(f,false)}
-$('signout').onclick=async()=>{try{await logout()}catch(e){}show(null);tab(false)}
-onAuthChange((ev,u)=>{if(ev==='logout')show(null);else if(u)show(u)})
-try{show(await getUser())}catch(e){show(null)}
-</script>
-<script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="app-extras.js"></script>
+<script type="module" src="/assets/auth.mjs"></script>
 </body>
 </html>
