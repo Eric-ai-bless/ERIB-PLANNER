@@ -83,7 +83,7 @@ body[data-view=sub] #dash,body[data-view=sub] .vnew,body[data-view=sub] #saved,b
 label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input{width:auto;margin:0}
 .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--acc);color:var(--acc);margin-left:4px}.badge.w{border-color:var(--warn);color:var(--warn)}
 .pre{white-space:pre-wrap;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:6px 0}
-.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff!important;border-radius:8px;padding:8px 14px;font-weight:700;text-decoration:none;font-size:14px}.wa:hover{filter:brightness(.95)}.wa svg{width:18px;height:18px;fill:currentColor}
+.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff!important;border-radius:8px;padding:8px 14px;font-weight:700;text-decoration:none;font-size:14px}.wa:hover{filter:brightness(.95)}.dial{display:inline-flex;align-items:center;gap:6px;background:#FFCB05;color:#1a1a1a!important;border-radius:8px;padding:10px 16px;font-weight:700;text-decoration:none;font-size:15px;margin:4px 0}.dial:hover{filter:brightness(.95)}.dial code{font-size:14px;background:rgba(255,255,255,.55);padding:1px 6px;border-radius:4px}.wa svg{width:18px;height:18px;fill:currentColor}
 #susp{border:1px solid var(--warn);color:var(--warn);background:var(--card);border-radius:10px;padding:12px 14px;margin:0 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}#susp span{flex:1;min-width:200px}
 #drawer a.dwa{color:#1a8f4a}
 .money{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0 12px}
@@ -570,6 +570,8 @@ const money=p=>p.price?Number(p.price).toLocaleString()+' '+p.currency:'Free';
 const day=d=>d?new Date(d).toLocaleDateString():'';
 const WAI='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>';
 const waUrl=(num,text)=>num?'https://wa.me/'+String(num).replace(/\D/g,'')+(text?'?text='+encodeURIComponent(text):''):'';
+const dialCode=(m,p)=>m&&m.dialCode?m.dialCode.replace(/\{amount\}/g,p&&p.price?String(Math.round(Number(p.price))):''):'';
+function dialBtn(code,label){const a=el('a','dial');a.href='tel:'+code.replace(/#/g,'%23');a.appendChild(document.createTextNode('📞 '+(label||'Dial to pay')+' '));a.appendChild(el('code','',code));return a}
 function waBtn(num,label,text){const a=el('a','wa');a.href=waUrl(num,text);a.target='_blank';a.rel='noopener';a.innerHTML=WAI;a.appendChild(document.createTextNode(label));return a}
 const nextMonth=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1).toLocaleDateString()};
 function form(fields,vals,label,onsave,oncancel){const f=el('form','aform'),g=el('div','grid');
@@ -627,11 +629,12 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
  if(pk&&!pend){const box=el('div','aform');box.id='upf';box.appendChild(el('b','','Upgrade to '+pk.name+' ('+money(pk)+')'));
   if(!a.paymentMethods.length){box.appendChild(el('p','note','No payment methods have been set up yet. Please contact the admin.'));if(a.whatsapp)box.appendChild(waBtn(a.whatsapp,'Contact admin on WhatsApp','Hello admin, I am '+who+'. I would like to upgrade to the '+pk.name+' plan. How can I pay?'))}
   else{box.appendChild(el('p','note','1. Pay using one of the methods below. 2. Enter the transaction reference so the admin can confirm it. Your plan is upgraded once the admin approves.'));
-   const det=el('div','pre');
+   const det=el('div','pre'),dz=el('div');
    const f=form([{k:'paymentMethodId',label:'Payment method',type:'select',opts:a.paymentMethods.map(m=>[m.id,m.name])},{k:'reference',label:'Transaction reference / ID',ph:'e.g. MoMo transaction ID'},{k:'message',label:'Message to the admin (optional)',type:'textarea',wide:1}],{},'Send upgrade request',
     async o=>{await call('/api/account','POST',{planId:pk.id,paymentMethodId:+o.paymentMethodId,reference:o.reference,message:o.message});PICK=0;await window.loadAccount()},()=>{PICK=0;renderAcc()});
-   const sel=f.elements.paymentMethodId,upd=()=>{const m=a.paymentMethods.find(x=>String(x.id)===sel.value);det.textContent=m?(m.details||m.name):''};sel.onchange=upd;upd();
-   box.append(det,f)}
+   const sel=f.elements.paymentMethodId,upd=()=>{const m=a.paymentMethods.find(x=>String(x.id)===sel.value),c=dialCode(m,pk);det.textContent=m?(m.details||m.name):'';dz.textContent='';
+    if(c){dz.appendChild(dialBtn(c,'Dial to pay '+money(pk)));dz.appendChild(el('p','note','Tap to open your phone dialer with the code ready, then press call and confirm with your PIN. Copy the transaction ID from the confirmation SMS into the field below.'))}};sel.onchange=upd;upd();
+   box.append(det,dz,f)}
   s.appendChild(box)}
  if(a.requests.length){s.appendChild(el('h3','','My upgrade requests'));
   a.requests.forEach(r=>{const p=a.plans.find(x=>x.id===r.planId),row=el('div','arow'),h=el('div','hd'),t=el('span','',(p?p.name:'Plan #'+r.planId)+' · '+day(r.createdAt)+(r.reference?' · ref '+r.reference:''));
@@ -752,14 +755,14 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
   b.appendChild(form([{k:'whatsapp',label:'Admin WhatsApp number (with country code)',ph:'e.g. +250788123456'}],A.settings,'Save',o=>act({action:'saveSettings',whatsapp:o.whatsapp})));
   if(A.settings.whatsapp){const c=el('div','bar');c.appendChild(waBtn(A.settings.whatsapp,'Test the WhatsApp link','Test'));b.appendChild(c)}}
  if(TAB==='pay'){
-  b.appendChild(el('p','note','Payment methods are shown to users when they request an upgrade. Put the instructions in the details, e.g. the MoMo number and account name.'));
-  const F=[{k:'name',label:'Name',ph:'e.g. MTN Mobile Money'},{k:'sortOrder',label:'Display order',type:'number'},{k:'details',label:'Payment details / instructions',type:'textarea',wide:1,ph:'e.g. Send to 078XXXXXXX (Name). Use your email as the reason.'},{k:'active',label:'Visible to users',type:'checkbox'}];
+  b.appendChild(el('p','note','Payment methods are shown to users when they request an upgrade. Put the instructions in the details, e.g. the MoMo number and account name. Add a dial code (e.g. a MoMo USSD code) to give users a “Dial to pay” button that opens their phone dialer with the code typed in. Write {amount} where the plan price goes, e.g. *182*1*1*0788123456*{amount}#.'));
+  const F=[{k:'name',label:'Name',ph:'e.g. MTN Mobile Money'},{k:'sortOrder',label:'Display order',type:'number'},{k:'dialCode',label:'Dial code (optional)',ph:'e.g. *182*8*1*123456*{amount}#'},{k:'details',label:'Payment details / instructions',type:'textarea',wide:1,ph:'e.g. Send to 078XXXXXXX (Name). Use your email as the reason.'},{k:'active',label:'Visible to users',type:'checkbox'}];
   b.appendChild(btn('+ Add payment method',0,()=>{EDIT='newpm';renderAdm()}));
   if(EDIT==='newpm')b.appendChild(form(F,{active:true,sortOrder:A.paymentMethods.length},'Create payment method',o=>act(Object.assign({action:'savePayment'},o)),()=>{EDIT=null;renderAdm()}));
   if(!A.paymentMethods.length)b.appendChild(el('p','dempty','No payment methods yet. Users cannot request an upgrade until you add one.'));
   A.paymentMethods.forEach(m=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');t.appendChild(el('b','',m.name));if(!m.active)t.appendChild(el('span','badge w','hidden'));
    h.append(t,btn(EDIT==='m'+m.id?'Close':'Edit',0,()=>{EDIT=EDIT==='m'+m.id?null:'m'+m.id;renderAdm()}),btn('Delete',1,async()=>{if(!confirm('Delete “'+m.name+'”?'))return;try{await act({action:'deletePayment',id:m.id})}catch(x){alert(x.message)}}));
-   row.appendChild(h);if(m.details)row.appendChild(el('div','pre',m.details));
+   row.appendChild(h);if(m.dialCode)row.appendChild(el('div','note','Dial code: '+m.dialCode));if(m.details)row.appendChild(el('div','pre',m.details));
    if(EDIT==='m'+m.id)row.appendChild(form(F,m,'Save payment method',o=>act(Object.assign({action:'savePayment',id:m.id},o)),()=>{EDIT=null;renderAdm()}));b.appendChild(row)})}
 }
 })();

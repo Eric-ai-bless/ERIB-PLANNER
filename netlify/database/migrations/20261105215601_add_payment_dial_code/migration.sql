@@ -1,0 +1,1 @@
+ALTER TABLE "payment_methods" ADD COLUMN "dial_code" text DEFAULT '' NOT NULL;
