@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ERIB CBC LESSON PLANNER</title>
 <link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="modulepreload" href="/assets/vendor/identity.mjs">
 <link rel="apple-touch-icon" href="/assets/logo.png">
 <style>
 :root{--bg:#f5f7f4;--card:#fff;--ink:#1c2a22;--mut:#5b6b61;--line:#cfd8d2;--acc:#0b6b3a;--accink:#fff;--head:#e4e4e4;--warn:#9a5b00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -19,7 +20,7 @@ main{max-width:1000px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 label{display:block;font-size:12px;color:var(--mut);font-weight:600}
-input,select,textarea{width:100%;margin-top:3px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input,select,textarea{width:100%;margin-top:3px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
 .wide{grid-column:1/-1}
 button{font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:var(--accink);cursor:pointer}
 button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cursor:wait}
@@ -35,7 +36,7 @@ button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cu
 #paper td.h{background:#e4e4e4;font-weight:bold}#paper td.i{font-style:italic;text-align:center}
 #paper td[contenteditable]:focus{outline:2px solid #0b6b3a;outline-offset:-2px;background:#fffbe0}
 #nbox{background:#fff;color:#000;padding:16px;border-radius:6px;font:15px/1.5 "Times New Roman",serif}#nbox [data-t=h1]{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}#nbox [data-t=h2]{font-size:17px;font-weight:700;margin-top:12px}#nbox [data-t=li]{padding-left:18px;text-indent:-12px}#nbox [data-t=li]::before{content:"\2022  "}
-#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:safe center;justify-content:center;padding:20px;overflow:auto;overscroll-behavior:contain}
 #auth[hidden]{display:none}
 #auth .box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
 #auth h2{margin:0 0 2px;color:var(--acc);font-size:22px}#auth .sub{margin:0 0 16px;color:var(--mut);font-size:13px}
@@ -99,18 +100,24 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
 <div id="auth">
  <div class="box">
   <img class="alogo" src="/assets/logo.png" alt="ERIB CBC Planner logo" width="96" height="96"><h2>ERIB CBC LESSON PLANNER</h2><p class="sub">Sign in or create a free account to plan lessons.</p>
-  <div id="aload" class="sub">Loading sign-in…</div>
-  <div id="aforms" hidden>
+  <div id="aload" class="sub" hidden>Loading sign-in…</div>
+  <div id="aforms">
    <div class="tabs"><button type="button" id="tin">Sign in</button><button type="button" class="alt" id="tup">Create account</button></div>
    <form id="fin" autocomplete="on">
-    <label>Email<input id="inEmail" type="email" autocomplete="email" required></label>
-    <label>Password<input id="inPass" type="password" autocomplete="current-password" required></label>
+    <label>Email<input id="inEmail" name="email" type="email" autocapitalize="none" spellcheck="false" autocomplete="email" required></label>
+    <label>Password<input id="inPass" name="password" type="password" autocomplete="current-password" required></label>
     <button type="submit">Sign in</button>
+   </form>
+   <button type="button" id="forgot" class="alt" style="margin-top:10px">Forgot password?</button>
+   <form id="freset" hidden>
+    <p class="note">Choose a new password for your account.</p>
+    <label>New password<input id="resetPass" name="new-password" type="password" autocomplete="new-password" required minlength="6" maxlength="128"></label>
+    <button type="submit">Save new password</button>
    </form>
    <form id="fup" hidden autocomplete="on">
     <label>First name<input id="upFirst" autocomplete="given-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
     <label>Second name<input id="upLast" autocomplete="family-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
-    <label>Email<input id="upEmail" type="email" autocomplete="email" required></label>
+    <label>Email<input id="upEmail" name="email" type="email" autocapitalize="none" spellcheck="false" autocomplete="email" required></label>
     <label>Password<input id="upPass" type="password" autocomplete="new-password" required minlength="6"></label>
     <button type="submit">Create account</button>
    </form>
@@ -255,7 +262,7 @@ function render(){
   if(c.k){td.dataset.k=c.k;td.textContent=D[c.k]||'';if(!c.h)td.contentEditable='true';if(c.h)td.className='h'}else td.textContent=c.t;
   if(c.c)td.style.textAlign='center';});});
  p.appendChild(t);
- p.querySelectorAll('[data-k][contenteditable]').forEach(el=>el.addEventListener('input',()=>{D[el.dataset.k]=el.innerText;updFit()}));
+ p.querySelectorAll('[data-k][contenteditable]').forEach(el=>el.addEventListener('input',()=>{D[el.dataset.k]=el.innerText;scheduleFit()}));
  updFit();
  // fix colgroup for fixed layout
  const cg=document.createElement('colgroup');for(let i=0;i<U;i++)cg.appendChild(document.createElement('col'));t.prepend(cg);
@@ -437,6 +444,8 @@ function renderDocs(bad,dup){const dv=$('docs'),st=$('books');dv.innerHTML='';if
  if(BK&&BK.length>1){const c=document.createElement('button');c.type='button';c.className='alt';c.style.cssText='padding:2px 10px;font-size:12px';c.textContent='Remove all';c.onclick=()=>{BK=null;renderDocs()};dv.appendChild(c)}
  st.textContent=(BK?BK.length+' document(s) loaded. You can keep adding more with the same button. Check the type of each one: the content distribution gives the lesson sequence, the syllabus gives competences and official terms, the guide and book give content and activities. '+(BK.length>1?'Page numbers apply only when one document is loaded.':'Enter the pages of your unit or leave them empty to search by unit title or topic.'):'')+(dup&&dup.length?' Already added: '+dup.join(', ')+'.':'')+(bad&&bad.length?' Could not read: '+bad.join(', ')+' (scanned PDFs have no text: paste it instead).':'')}
 $('go').onclick=generate;$('dl').onclick=()=>save(wordBlob,'.docx');$('pr').onclick=()=>save(pdfBlob,'.pdf');
+let fitTimer;
+function scheduleFit(){clearTimeout(fitTimer);fitTimer=setTimeout(updFit,250)}
 function updFit(){const f=fitPlan().fs,m=$('msg2');m.style.color=f>=9?'':'var(--warn)';m.textContent=f>=9?'Fits one page at '+f.toFixed(1)+' pt. Click any cell to edit.':'Long plan: text shrinks to '+f.toFixed(1)+' pt to stay on one page. Shorten some cells for a more readable size.'}
 async function ai(){if(typeof getSample==='function')return getSample();try{const s=await claude.use('sample');return s?{json:p=>s.json(p,{modelTier:'default'})}:null}catch(e){return null}}
 function readNotes(){return [...$('nbox').children].map(e=>({t:e.dataset.t||'p',x:e.innerText.trim()})).filter(b=>b.x)}
