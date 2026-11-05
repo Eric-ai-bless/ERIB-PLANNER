@@ -1,13 +1,16 @@
 import type { Config } from '@netlify/functions'
-import { getUser, verifyRequestOrigin } from '@netlify/identity'
+import { admin as idAdmin, getUser, verifyRequestOrigin } from '@netlify/identity'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '../../db/index.js'
-import { paymentMethods, upgradeRequests } from '../../db/schema.js'
-import { SUSPENDED_MSG, ensurePlans, entitlement, getSettings, isAdmin, isSuspended } from '../../db/subs.js'
+import { paymentMethods, securityAnswers, upgradeRequests } from '../../db/schema.js'
+import { saveAnswers } from '../../db/security.js'
+import { OWNER_EMAIL, SUSPENDED_MSG, ensurePlans, entitlement, getSettings, isAdmin, isSuspended, setSetting } from '../../db/subs.js'
 
 // The signed-in user's subscription.
 //   GET  /api/account  -> current plan, limits, this month's usage, plans, payment methods, my upgrade requests
 //   POST /api/account  -> send an upgrade request { planId, paymentMethodId, reference, message }
+//   POST /api/account {action:'setSecurity', birthday, food} -> save password-reset answers
+//   POST /api/account {action:'changePassword', password}    -> change my password
 const str = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
 
 export default async (req: Request) => {
@@ -15,13 +18,14 @@ export default async (req: Request) => {
   if (!user) return Response.json({ error: 'Please sign in.' }, { status: 401 })
 
   if (req.method === 'GET') {
-    const [ent, plans, pms, reqs, adm, settings] = await Promise.all([
+    const [ent, plans, pms, reqs, adm, settings, sec] = await Promise.all([
       entitlement(user.id),
       ensurePlans(),
       db.select().from(paymentMethods).where(eq(paymentMethods.active, true)).orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.id)),
       db.select().from(upgradeRequests).where(eq(upgradeRequests.userId, user.id)).orderBy(desc(upgradeRequests.createdAt)).limit(20),
       isAdmin(user),
       getSettings(),
+      db.select({ id: securityAnswers.userId }).from(securityAnswers).where(eq(securityAnswers.userId, user.id)),
     ])
     return Response.json({
       ...ent,
@@ -31,6 +35,7 @@ export default async (req: Request) => {
       paymentMethods: pms,
       requests: reqs,
       whatsapp: settings.whatsapp || '',
+      hasSecurity: sec.length > 0,
     })
   }
 
@@ -40,8 +45,20 @@ export default async (req: Request) => {
     } catch {
       return Response.json({ error: 'Request not allowed' }, { status: 403 })
     }
-    if (await isSuspended(user.id)) return Response.json({ error: SUSPENDED_MSG }, { status: 403 })
     const body: any = await req.json().catch(() => ({}))
+    if (body?.action === 'setSecurity') {
+      const msg = await saveAnswers(user.id, user.email || '', body.birthday, body.food)
+      return msg ? Response.json({ error: msg }, { status: 422 }) : Response.json({ ok: true })
+    }
+    if (body?.action === 'changePassword') {
+      const pw = String(body.password ?? '')
+      if (pw.length < 6 || pw.length > 128) return Response.json({ error: 'The new password must be at least 6 characters.' }, { status: 422 })
+      await idAdmin.updateUser(user.id, { password: pw })
+      // The one-time initial admin password must never overwrite a password the owner chose.
+      if ((user.email || '').toLowerCase() === OWNER_EMAIL) await setSetting('owner_password_set', new Date().toISOString())
+      return Response.json({ ok: true })
+    }
+    if (await isSuspended(user.id)) return Response.json({ error: SUSPENDED_MSG }, { status: 403 })
     const planId = Number(body?.planId) || 0
     const pmId = Number(body?.paymentMethodId) || null
     const plans = await ensurePlans()

@@ -38,7 +38,7 @@ button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cu
 #paper td[contenteditable]:focus{outline:2px solid #0b6b3a;outline-offset:-2px;background:#fffbe0}
 #nbox{background:#fff;color:#000;padding:16px;border-radius:6px;font:15px/1.5 "Times New Roman",serif}#nbox [data-t=h1]{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}#nbox [data-t=h2]{font-size:17px;font-weight:700;margin-top:12px}#nbox [data-t=li]{padding-left:18px;text-indent:-12px}#nbox [data-t=li]::before{content:"\2022  "}
 #auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:safe center;justify-content:center;padding:20px;overflow:auto;overscroll-behavior:contain}
-#auth[hidden]{display:none}
+#auth[hidden]{display:none}#auth label[hidden]{display:none}#rsBack{width:100%}
 #auth .box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
 #auth h2{margin:0 0 2px;color:var(--acc);font-size:22px}#auth .sub{margin:0 0 16px;color:var(--mut);font-size:13px}
 #auth .tabs{display:flex;gap:6px;margin-bottom:14px}#auth .tabs button{flex:1;padding:8px}
@@ -110,16 +110,24 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
     <button type="submit">Sign in</button>
    </form>
    <button type="button" id="forgot" class="alt" style="margin-top:10px">Forgot password?</button>
-   <form id="freset" hidden>
-    <p class="note">Choose a new password for your account.</p>
+   <form id="freset" hidden autocomplete="off">
+    <p class="note">Reset your password by answering one of your security questions.</p>
+    <label>Email<input id="rsEmail" type="email" autocapitalize="none" spellcheck="false" autocomplete="email" required></label>
+    <label>Answer with<select id="rsMethod"><option value="birthday">My birthday</option><option value="food">My favorite food</option></select></label>
+    <label id="rsBirthL">Birthday<input id="rsBirth" type="date" max="" required></label>
+    <label id="rsFoodL" hidden>Favorite food<input id="rsFood" maxlength="80" autocomplete="off"></label>
     <label>New password<input id="resetPass" name="new-password" type="password" autocomplete="new-password" required minlength="6" maxlength="128"></label>
     <button type="submit">Save new password</button>
+    <button type="button" id="rsBack" class="alt" style="margin-top:8px">Back to sign in</button>
    </form>
    <form id="fup" hidden autocomplete="on">
     <label>First name<input id="upFirst" autocomplete="given-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
     <label>Second name<input id="upLast" autocomplete="family-name" required maxlength="30" pattern="[A-Za-zÀ-ÖØ-öø-ÿ'\-]{2,30}" title="Letters only (hyphen or apostrophe allowed), one name"></label>
     <label>Email<input id="upEmail" name="email" type="email" autocapitalize="none" spellcheck="false" autocomplete="email" required></label>
     <label>Password<input id="upPass" type="password" autocomplete="new-password" required minlength="6"></label>
+    <p class="note">Security questions: used to reset your password if you forget it. Keep them private.</p>
+    <label>Birthday<input id="upBirth" type="date" required></label>
+    <label>Favorite food<input id="upFood" required minlength="2" maxlength="80" autocomplete="off"></label>
     <button type="submit">Create account</button>
    </form>
    <p id="amsg" role="status" aria-live="polite"></p>
@@ -596,6 +604,7 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
  $('kPlan').textContent=a.plan?a.plan.name:'–';$('kLes').textContent=a.used.lessons+' / '+lim(a.lessonLimit);$('kEx').textContent=a.used.exercises+' / '+lim(a.exerciseLimit);
  $('quota').textContent=(a.plan?a.plan.name+' plan: ':'')+(a.lessonLimit==null?'unlimited lesson plans':Math.max(0,a.lessonLimit-a.used.lessons)+' of '+a.lessonLimit+' lesson plans left this month')+(a.exerciseLimit==null?', unlimited notes & exercises.':', '+Math.max(0,a.exerciseLimit-a.used.exercises)+' of '+a.exerciseLimit+' notes & exercises left.');
  s.innerHTML='';
+ if(!a.hasSecurity){const w=el('p','note','Set your birthday and favorite food under “Password & security” below. You need them to reset your password if you forget it.');w.style.color='#b45309';s.appendChild(w)}
  const head=el('p','note','Current plan: ');head.appendChild(el('b','',a.plan?a.plan.name:'None'));if(a.customLimits)head.appendChild(el('span','badge','custom limits'));
  head.append(a.expiresAt?' · active until '+day(a.expiresAt):'');s.appendChild(head);
  if(a.whatsapp){const c=el('div','bar');c.appendChild(waBtn(a.whatsapp,'Contact admin on WhatsApp','Hello admin, I am '+who+' from ERIB CBC LESSON PLANNER. '));c.appendChild(el('span','note','Questions about payment or your plan? Chat with the admin directly.'));s.appendChild(c)}
@@ -628,6 +637,15 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
  if(a.requests.length){s.appendChild(el('h3','','My upgrade requests'));
   a.requests.forEach(r=>{const p=a.plans.find(x=>x.id===r.planId),row=el('div','arow'),h=el('div','hd'),t=el('span','',(p?p.name:'Plan #'+r.planId)+' · '+day(r.createdAt)+(r.reference?' · ref '+r.reference:''));
    t.appendChild(el('span','badge'+(r.status==='rejected'?' w':''),r.status));h.appendChild(t);row.appendChild(h);s.appendChild(row)})}
+ s.appendChild(el('h3','','Password & security'));
+ s.appendChild(el('p','note',a.hasSecurity?'Your security answers are saved. To reset a forgotten password, click “Forgot password?” on the sign-in page and give your birthday or favorite food. You can replace the answers here.':'No security answers saved yet. Without them you cannot reset a forgotten password yourself.'));
+ const sf=form([{k:'birthday',label:'Birthday',type:'date'},{k:'food',label:'Favorite food',ph:'e.g. Ugali'}],{},a.hasSecurity?'Update security answers':'Save security answers',
+  async o=>{await call('/api/account','POST',{action:'setSecurity',birthday:o.birthday,food:o.food});await window.loadAccount()});
+ sf.elements.birthday.max=new Date().toISOString().slice(0,10);s.appendChild(sf);
+ const pf=form([{k:'password',label:'New password',type:'password',ph:'at least 6 characters'},{k:'again',label:'Repeat new password',type:'password'}],{},'Change password',
+  async o=>{if(o.password.length<6)throw new Error('The new password must be at least 6 characters.');if(o.password!==o.again)throw new Error('The two passwords do not match.');
+   await call('/api/account','POST',{action:'changePassword',password:o.password});pf.reset();setTimeout(()=>{pf.querySelector('.amsg').textContent='Password changed.'},0)});
+ s.appendChild(pf);
 }
 
 // ---------- admin ----------
@@ -666,6 +684,8 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
       o=>act(Object.assign({action:'setUserPlan',userId:u.id},o,{expiresAt:o.expiresAt?o.expiresAt+'T23:59:59':null})),()=>{EDIT=null;draw()}));
      const bar=el('div','bar');
      if(!u.isOwner)bar.appendChild(btn(u.isAdmin?'Remove admin role':'Make admin',1,async e=>{e.target.disabled=true;try{await act({action:'setRole',userId:u.id,admin:!u.isAdmin})}catch(x){alert(x.message);e.target.disabled=false}}));
+     bar.appendChild(btn('Set new password',1,async e=>{const pw=prompt('Type a new password for '+(u.name||u.email)+' (at least 6 characters). Give it to them so they can sign in and change it.','');if(pw===null)return;
+      e.target.disabled=true;try{await call('/api/admin','POST',{action:'setPassword',userId:u.id,password:pw});alert('Password changed for '+(u.name||u.email)+'.')}catch(x){alert(x.message)}e.target.disabled=false}));
      bar.appendChild(btn('Record payment',1,()=>{TAB='money';EDIT='newmoney';PRE={userId:u.id};renderAdm()}));
      if(!u.isOwner&&u.id!==A.me)bar.appendChild(btn(u.suspended?'Restore user':'Stop user',1,async e=>{let reason='';if(!u.suspended){reason=prompt('Stop '+(u.name||u.email)+'? They will not be able to create or save lesson plans until you restore them.\n\nReason (optional, shown to the user):','');if(reason===null)return}
       e.target.disabled=true;try{await act({action:'suspendUser',userId:u.id,suspended:!u.suspended,reason})}catch(x){alert(x.message);e.target.disabled=false}}));
