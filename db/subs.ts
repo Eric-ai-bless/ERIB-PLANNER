@@ -27,7 +27,7 @@ export async function ensurePlans() {
   const rows = await db.select().from(subscriptionPlans).orderBy(asc(subscriptionPlans.sortOrder), asc(subscriptionPlans.id))
   if (rows.length) return rows
   await db.insert(subscriptionPlans).values([
-    { name: 'Free', description: 'Try ERIB PLANNER', price: 0, lessonLimit: 5, exerciseLimit: 5, isDefault: true, sortOrder: 0 },
+    { name: 'Free', description: 'Try ERIB CBC LESSON PLANNER', price: 0, lessonLimit: 5, exerciseLimit: 5, isDefault: true, sortOrder: 0 },
     { name: 'Standard', description: 'For a busy teacher', price: 3000, lessonLimit: 40, exerciseLimit: 40, sortOrder: 1 },
     { name: 'Premium', description: 'No monthly limits', price: 6000, lessonLimit: null, exerciseLimit: null, sortOrder: 2 },
   ]).onConflictDoNothing()
