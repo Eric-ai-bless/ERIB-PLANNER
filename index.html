@@ -41,6 +41,7 @@ button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cu
 #auth form label{margin-bottom:10px}#auth form button[type=submit]{width:100%;margin-top:4px}
 #amsg{min-height:18px;font-size:13px;margin:10px 0 0;color:var(--mut)}#amsg.err{color:var(--warn)}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sv{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.sv:first-child{border-top:0}.sv span{flex:1;font-size:13px;word-break:break-word}.sv small{color:var(--mut)}.sv button{padding:4px 12px;font-size:13px}
 #ubar{display:flex;align-items:center;gap:10px;font-size:13px}#ubar[hidden]{display:none}
 #ubar button{padding:6px 12px;background:transparent;color:var(--accink);border-color:var(--accink)}
 @media print{
@@ -107,8 +108,13 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
  <p class="note">Without pasted text, Claude drafts the plan from its knowledge of the REB competence-based curriculum. Check the unit title, key unit competence and objectives against your syllabus before use, and edit anything directly in the preview.</p>
 </section>
 
+<section class="card noprint" id="saved" hidden>
+ <div class="bar" style="margin:0 0 8px"><b>My saved lesson plans</b><span id="svmsg" style="font-size:13px;color:var(--mut)"></span></div>
+ <div id="svlist"></div>
+</section>
+
 <section class="card" id="out" hidden>
- <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
+ <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><button class="alt" id="sv">Save plan</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
  <div class="sheet"><div id="paper"></div></div>
 </section>
 <section class="card" id="nsec" hidden><div class="bar noprint" style="margin:0 0 10px"><b>Notes &amp; exercises (with marking guide)</b><button id="nw">Download Word (.docx)</button><button class="alt" id="np">Download PDF</button></div><div id="nbox" contenteditable="true"></div><p class="note noprint">Click any line to edit before downloading.</p></section>
@@ -206,7 +212,7 @@ Reply with ONLY this JSON: {"unitTitle":"","kuc":"","title":"","obj":"","loc":"(
    sen:g('sen')||r.sen||T.none,unitTitle:g('unitTitle')||r.unitTitle,self:'',iLab:`${T.i} (${a} min)`,dLab:`${T.d} (${d} min)`,cLab:`${T.c} (${a} min)`});
   ['kuc','title','obj','loc','mat','ref','desc','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(k=>D[k]=String(r[k]||'').replace(/\\n/g,'\n'));
   if(g('topic'))D.title=g('topic');
-  $('out').hidden=false;$('nsec').hidden=true;window.LASTBOOK=book;render();
+  $('out').hidden=false;$('nsec').hidden=true;window.LASTBOOK=book;PID=0;$('sv').textContent='Save plan';render();
   for(let k=0;k<2&&fitPlan().fs<9.5;k++){msg('Shortening the plan so the text stays readable on one page…');try{const sub={};['obj','mat','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(x=>sub[x]=D[x]);const r2=await sample.json('Shorten these cells of a lesson plan so the whole plan fits one A4 page at 10 pt. Keep the meaning and the language ('+T.name+'). Lists keep lines starting with "- ", at most 3 lines per cell and 12 words per line; obj max 2 short sentences; mat one line. Return ONLY JSON with the same keys. Use \\n between lines.\n'+JSON.stringify(sub));Object.keys(sub).forEach(x=>{if(r2[x])D[x]=String(r2[x]).replace(/\\n/g,'\n')})}catch(e){break}}
   render();msg('Done. Review and edit below.');
   $('out').scrollIntoView({behavior:'smooth'});
@@ -293,7 +299,7 @@ async function save(make,ext,p){
   const blob=make();let dl=null;
   {const u=URL.createObjectURL(blob),an=document.createElement('a');an.href=u;an.download=fname(ext,p);document.body.appendChild(an);an.click();an.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   
-  m.textContent='Saved. You can edit the cells again and re-download at any time.';m.style.color='';
+  m.textContent='Downloaded. You can edit the cells again and re-download at any time.';m.style.color='';
  }catch(e){
   if(e&&e.code==='declined'){m.textContent='Download cancelled.';return}
   m.textContent='Download failed ('+((e&&(e.code||e.message))||'unknown')+'). Please try again.';m.style.color='var(--warn)';
@@ -383,6 +389,42 @@ function notesPdf(bl){
  const xr=out.length;out+='xref\n0 '+(o.length+1)+'\n0000000000 65535 f \n'+off.map(v=>String(v).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<</Size '+(o.length+1)+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF';
  const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return new Blob([u],{type:'application/pdf'})}
 $('nb').onclick=makeNotes;
+// Saved lesson plans (stored in the site's database, per signed-in user)
+let PID=0;
+const smsg=(t,er)=>{const m=$('msg2');m.textContent=t;m.style.color=er?'var(--warn)':''};
+async function api(method,q,body){const r=await fetch('/api/plans'+(q||''),{method,headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('server error '+r.status));return j}
+async function savePlan(){const b=$('sv');b.disabled=true;smsg('Saving the plan…');
+ try{const notes=$('nsec').hidden?null:readNotes();
+  const r=await api('POST','',{id:PID||undefined,plan:Object.assign({},D),labels:String(D.lang||'').startsWith('c_')?LB[D.lang]:null,notes});
+  PID=r.id;b.textContent='Update saved plan';smsg('Plan saved. Find it under “My saved lesson plans”.');loadSaved()}
+ catch(e){smsg('Could not save the plan: '+((e&&e.message)||'please try again'),1)}
+ b.disabled=false}
+$('sv').onclick=savePlan;
+async function openPlan(id){const st=$('svmsg');st.textContent='Opening…';
+ try{const r=await api('GET','?id='+id);
+  if(r.labels&&String(r.plan.lang||'').startsWith('c_'))LB[r.plan.lang]=r.labels;
+  Object.keys(D).forEach(k=>delete D[k]);Object.assign(D,r.plan);if(!LB[D.lang])D.lang='en';
+  PID=r.id;window.LASTBOOK='';$('sv').textContent='Update saved plan';$('out').hidden=false;render();
+  if(Array.isArray(r.notes)&&r.notes.length)renderNotes(r.notes.map(n=>(n.t==='h1'?'# ':n.t==='h2'?'## ':n.t==='li'?'- ':'')+String(n.x).replace(/\n/g,' ')).join('\n'));else $('nsec').hidden=true;
+  st.textContent='';$('out').scrollIntoView({behavior:'smooth'})}
+ catch(e){st.textContent='Could not open the plan: '+((e&&e.message)||'please try again')}}
+async function delPlan(id,t){if(!confirm('Delete the saved plan “'+t+'”?'))return;
+ try{await api('DELETE','?id='+id);if(PID===id){PID=0;$('sv').textContent='Save plan'}loadSaved()}
+ catch(e){$('svmsg').textContent='Could not delete: '+((e&&e.message)||'please try again')}}
+async function loadSaved(){const sec=$('saved'),ls=$('svlist'),st=$('svmsg');
+ try{const rows=await api('GET');ls.innerHTML='';sec.hidden=false;
+  if(!rows.length){st.textContent='No saved plans yet. Generate a plan and click “Save plan”.';return}
+  st.textContent=rows.length+' saved';
+  rows.forEach(p=>{const r=document.createElement('div');r.className='sv';const n=document.createElement('span');
+   const t=p.title||'Untitled lesson';n.textContent=[p.subject,p.cls,t].filter(Boolean).join(' · ')+' ';
+   const d=document.createElement('small');d.textContent='saved '+new Date(p.updatedAt).toLocaleString();n.appendChild(d);
+   const o=document.createElement('button');o.type='button';o.textContent='Open';o.onclick=()=>openPlan(p.id);
+   const x=document.createElement('button');x.type='button';x.className='alt';x.textContent='Delete';x.onclick=()=>delPlan(p.id,t);
+   r.append(n,o,x);ls.appendChild(r)})}
+ catch(e){sec.hidden=false;st.textContent='Could not load saved plans: '+((e&&e.message)||'please try again')}}
+window.loadSaved=loadSaved;
+window.clearSaved=()=>{$('saved').hidden=true;$('svlist').innerHTML='';PID=0;$('sv').textContent='Save plan'};
 $('nw').onclick=()=>save(()=>mkWord(notesXml(readNotes())),'.docx','Notes_Exercises_');
 $('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
 
@@ -394,8 +436,8 @@ const auth=$('auth'),msg=$('amsg')
 const say=(t,err)=>{msg.textContent=t||'';msg.className=err?'err':''}
 const nameOf=u=>(u&&(u.userMetadata&&u.userMetadata.username))||(u&&u.name)||(u&&u.email)||''
 function show(u){
- if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u)}
- else{auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
+ if(u){auth.hidden=true;$('ubar').hidden=false;$('uname').textContent=nameOf(u);window.loadSaved&&window.loadSaved()}
+ else{window.clearSaved&&window.clearSaved();auth.hidden=false;$('ubar').hidden=true;$('aload').hidden=true;$('aforms').hidden=false}
 }
 function tab(up){$('fin').hidden=up;$('fup').hidden=!up;$('tin').className=up?'alt':'';$('tup').className=up?'':'alt';say('')}
 $('tin').onclick=()=>tab(false);$('tup').onclick=()=>tab(true)
