@@ -41,6 +41,8 @@ export const paymentMethods = pgTable('payment_methods', {
   id: serial().primaryKey(),
   name: text().notNull(),
   details: text().notNull().default(''),
+  // Code users can dial straight from the app (e.g. a MoMo USSD code like *182*8*1*123456#). {amount} is replaced by the plan price.
+  dialCode: text('dial_code').notNull().default(''),
   active: boolean().notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),

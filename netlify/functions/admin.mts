@@ -150,7 +150,9 @@ export default async (req: Request) => {
     case 'savePayment': {
       const name = str(b.name, 80)
       if (!name) return err('Payment method name is required.')
-      const v = { name, details: str(b.details, 1000), active: b.active !== false, sortOrder: Math.floor(Number(b.sortOrder)) || 0 }
+      const dialCode = str(b.dialCode, 80).replace(/\s+/g, '')
+      if (dialCode && !/^(\+?[0-9*#]|\{amount\})+$/.test(dialCode)) return err('The dial code can only contain digits, *, #, + and {amount} (e.g. *182*8*1*123456*{amount}#).')
+      const v = { name, details: str(b.details, 1000), dialCode, active: b.active !== false, sortOrder: Math.floor(Number(b.sortOrder)) || 0 }
       const [row] = id
         ? await db.update(paymentMethods).set(v).where(eq(paymentMethods.id, id)).returning()
         : await db.insert(paymentMethods).values(v).returning()
