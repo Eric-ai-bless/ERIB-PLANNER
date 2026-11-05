@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>/* Keep email-link tokens (password reset, confirmation) safe until sign-in code reads them. */(function(){try{var h=location.hash;if(/(^#|&)(recovery_token|confirmation_token|invite_token|email_change_token|access_token)=/.test(h))sessionStorage.setItem('authLinkHash',h)}catch(e){}})()</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ERIB CBC LESSON PLANNER</title>
 <link rel="icon" type="image/png" href="/assets/favicon.png">
@@ -519,10 +520,12 @@ $('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
 <script>
 (function(){
 const $=id=>document.getElementById(id),dr=$('drawer'),bg=$('scrim'),bu=$('burger'),V={dashboard:'dash',new:'new',saved:'saved',subscription:'sub',admin:'admin'};
+// Identity must consume email-link tokens before navigation changes the fragment.
+function isAuthCallback(){const p=new URLSearchParams(location.hash.slice(1));return ['recovery_token','confirmation_token','invite_token','email_change_token','access_token','error','error_description'].some(k=>p.has(k))}
 function menu(on){dr.classList.toggle('open',on);dr.setAttribute('aria-hidden',on?'false':'true');bg.hidden=!on;bu.setAttribute('aria-expanded',on?'true':'false');bu.setAttribute('aria-label',on?'Close menu':'Open menu');if(on){const a=dr.querySelector('a[aria-current]')||dr.querySelector('a');a&&a.focus()}}
 function setView(v,keep){if(!['dash','new','saved','sub','admin'].includes(v))v='dash';document.body.dataset.view=v;if(v==='sub'&&window.loadAccount)window.loadAccount();if(v==='admin'&&window.loadAdmin)window.loadAdmin();
  dr.querySelectorAll('a[data-v]').forEach(a=>a.dataset.v===v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
- const h=Object.keys(V).find(k=>V[k]===v);if(location.hash!=='#'+h)history.replaceState(null,'','#'+h);if(!keep)window.scrollTo(0,0)}
+ const h=Object.keys(V).find(k=>V[k]===v);if(!isAuthCallback()&&location.hash!=='#'+h)history.replaceState(null,'','#'+h);if(!keep)window.scrollTo(0,0)}
 window.setView=setView;window.closeMenu=()=>menu(false);
 bu.onclick=()=>menu(!dr.classList.contains('open'));bg.onclick=()=>menu(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dr.classList.contains('open')){menu(false);bu.focus()}});
