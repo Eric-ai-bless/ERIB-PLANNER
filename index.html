@@ -570,7 +570,9 @@ const money=p=>p.price?Number(p.price).toLocaleString()+' '+p.currency:'Free';
 const day=d=>d?new Date(d).toLocaleDateString():'';
 const WAI='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>';
 const waUrl=(num,text)=>num?'https://wa.me/'+String(num).replace(/\D/g,'')+(text?'?text='+encodeURIComponent(text):''):'';
-const dialCode=(m,p)=>m&&m.dialCode?m.dialCode.replace(/\{amount\}/g,p&&p.price?String(Math.round(Number(p.price))):''):'';
+// Dial code for a payment method. If the admin left it empty but the details contain an MTN Rwanda MoMo number (078/079…), the standard MoMo send-money code is used.
+const autoDial=m=>{if(!m)return'';if(m.dialCode)return m.dialCode;const t=(m.name||'')+' '+(m.details||''),x=t.replace(/[\s.-]/g,'').match(/(?:\+?250|0)(7[89]\d{7})(?!\d)/);return x?'*182*1*1*0'+x[1]+'*{amount}#':''};
+const dialCode=(m,p)=>{const c=autoDial(m);return c?c.replace(/\{amount\}/g,p&&p.price?String(Math.round(Number(p.price))):''):''};
 function dialBtn(code,label){const a=el('a','dial');a.href='tel:'+code.replace(/#/g,'%23');a.appendChild(document.createTextNode('📞 '+(label||'Dial to pay')+' '));a.appendChild(el('code','',code));return a}
 function waBtn(num,label,text){const a=el('a','wa');a.href=waUrl(num,text);a.target='_blank';a.rel='noopener';a.innerHTML=WAI;a.appendChild(document.createTextNode(label));return a}
 const nextMonth=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1).toLocaleDateString()};
@@ -634,6 +636,7 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
     async o=>{await call('/api/account','POST',{planId:pk.id,paymentMethodId:+o.paymentMethodId,reference:o.reference,message:o.message});PICK=0;await window.loadAccount()},()=>{PICK=0;renderAcc()});
    const sel=f.elements.paymentMethodId,upd=()=>{const m=a.paymentMethods.find(x=>String(x.id)===sel.value),c=dialCode(m,pk);det.textContent=m?(m.details||m.name):'';dz.textContent='';
     if(c){dz.appendChild(dialBtn(c,'Dial to pay '+money(pk)));dz.appendChild(el('p','note','Tap to open your phone dialer with the code ready, then press call and confirm with your PIN. Copy the transaction ID from the confirmation SMS into the field below.'))}};sel.onchange=upd;upd();
+   const all=a.paymentMethods.filter(m=>dialCode(m,pk));if(all.length>1){const q=el('div','bar');all.forEach(m=>q.appendChild(dialBtn(dialCode(m,pk),m.name)));box.append(el('b','','Quick dial'),q)}
    box.append(det,dz,f)}
   s.appendChild(box)}
  if(a.requests.length){s.appendChild(el('h3','','My upgrade requests'));
@@ -762,7 +765,7 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
   if(!A.paymentMethods.length)b.appendChild(el('p','dempty','No payment methods yet. Users cannot request an upgrade until you add one.'));
   A.paymentMethods.forEach(m=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');t.appendChild(el('b','',m.name));if(!m.active)t.appendChild(el('span','badge w','hidden'));
    h.append(t,btn(EDIT==='m'+m.id?'Close':'Edit',0,()=>{EDIT=EDIT==='m'+m.id?null:'m'+m.id;renderAdm()}),btn('Delete',1,async()=>{if(!confirm('Delete “'+m.name+'”?'))return;try{await act({action:'deletePayment',id:m.id})}catch(x){alert(x.message)}}));
-   row.appendChild(h);if(m.dialCode)row.appendChild(el('div','note','Dial code: '+m.dialCode));if(m.details)row.appendChild(el('div','pre',m.details));
+   row.appendChild(h);{const c=autoDial(m);row.appendChild(el('div','note',c?'Dial code'+(m.dialCode?'':' (from the MoMo number in the details)')+': '+c+' — users see a “Dial to pay” button.':'No dial code — users do not see a “Dial to pay” button. Click Edit and add one, e.g. *182*1*1*078XXXXXXX*{amount}#.'))}if(m.details)row.appendChild(el('div','pre',m.details));
    if(EDIT==='m'+m.id)row.appendChild(form(F,m,'Save payment method',o=>act(Object.assign({action:'savePayment',id:m.id},o)),()=>{EDIT=null;renderAdm()}));b.appendChild(row)})}
 }
 })();
