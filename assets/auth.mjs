@@ -54,14 +54,25 @@ $('freset').onsubmit=async ev=>{
 $('signout').onclick=async()=>{try{const {logout}=await identityReady;await logout()}catch(e){}show(null);tab(false)}
 // Recovery must remain on the password form until the password is saved.
 identityReady.then(async({onAuthChange,handleAuthCallback,getUser})=>{
- recovering=/(?:^#|&)recovery_token=/.test(location.hash)
+ // Restore the email-link token if anything removed it from the address bar before this point.
+ let saved=null;try{saved=sessionStorage.getItem('authLinkHash');sessionStorage.removeItem('authLinkHash')}catch(e){}
+ if(saved&&!/(recovery|confirmation|invite|email_change|access)_token=/.test(location.hash))history.replaceState(null,'',location.pathname+location.search+saved)
+ const params=new URLSearchParams(location.hash.slice(1))
+ recovering=params.has('recovery_token')||params.get('type')==='recovery'
+ if(params.has('error')||params.has('error_description')){
+  history.replaceState(null,'',location.pathname+location.search)
+  say('This email link is invalid or has expired. Enter your email and use Forgot password to request a new link.',true);return
+ }
  onAuthChange((ev,u)=>{if(ev==='logout')show(null);else if(u&&!recovering)show(u)})
  const callback=await handleAuthCallback()
- if(callback?.type==='recovery'){
+ if(callback?.type==='recovery'||(recovering&&callback?.user)){
   recovering=true;auth.hidden=false;$('fin').hidden=true;$('fup').hidden=true;$('freset').hidden=false;$('forgot').hidden=true
   document.querySelector('#auth .tabs').hidden=true
   say('Enter a new password to finish resetting your account.');$('resetPass').focus();return
  }
  if(callback?.user)show(callback.user)
  else{const user=await getUser();if(!interacted)show(user)}
-}).catch(e=>{if(!interacted)say(authError(e),true)})
+}).catch(e=>{
+ if(recovering){recovering=false;history.replaceState(null,'',location.pathname+location.search);say('This password reset link could not be verified. Enter your email and use Forgot password to request a new link.',true)}
+ else if(!interacted)say(authError(e),true)
+})
