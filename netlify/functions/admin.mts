@@ -2,14 +2,14 @@ import type { Config } from '@netlify/functions'
 import { admin as idAdmin, getUser, verifyRequestOrigin } from '@netlify/identity'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db/index.js'
-import { lessonPlans, paymentMethods, payments, subscriptionPlans, upgradeRequests, usage, userSubscriptions } from '../../db/schema.js'
+import { lessonPlans, paymentMethods, payments, securityAnswers, subscriptionPlans, upgradeRequests, usage, userSubscriptions } from '../../db/schema.js'
 import { OWNER_EMAIL, ensurePlans, getSettings, isAdmin, monthKey, resolve, setSetting } from '../../db/subs.js'
 
 // Admin-only API.
 //   GET  /api/admin           -> users (with plan & usage), plans, payment methods, upgrade requests
 //   POST /api/admin {action}  -> savePlan, deletePlan, savePayment, deletePayment,
 //                                 setUserPlan, setRole, suspendUser, deleteUser, decideRequest,
-//                                 saveMoney, deleteMoney (payments received), saveSettings (WhatsApp number)
+//                                 setPassword (temporary password for a user), saveMoney, deleteMoney (payments received), saveSettings (WhatsApp number)
 const str = (v: unknown, n = 200) => String(v ?? '').trim().slice(0, n)
 const lim = (v: unknown) => (v === null || v === undefined || v === '' ? null : Math.max(0, Math.floor(Number(v)) || 0))
 const err = (m: string, s = 400) => Response.json({ error: m }, { status: s })
@@ -176,6 +176,15 @@ export default async (req: Request) => {
       await idAdmin.updateUser(uid, { app_metadata: { ...(u.appMetadata || {}), roles: [...roles] } })
       return Response.json({ ok: true })
     }
+    case 'setPassword': {
+      const uid = str(b.userId, 100)
+      const pw = String(b.password ?? '')
+      if (pw.length < 6 || pw.length > 128) return err('The password must be at least 6 characters.')
+      const u = await idAdmin.getUser(uid).catch(() => null)
+      if (!u) return err('User not found', 404)
+      await idAdmin.updateUser(uid, { password: pw })
+      return Response.json({ ok: true })
+    }
     case 'suspendUser': {
       const uid = str(b.userId, 100)
       if (!uid) return err('Missing user')
@@ -243,6 +252,7 @@ export default async (req: Request) => {
         db.delete(userSubscriptions).where(eq(userSubscriptions.userId, uid)),
         db.delete(usage).where(eq(usage.userId, uid)),
         db.delete(upgradeRequests).where(eq(upgradeRequests.userId, uid)),
+        db.delete(securityAnswers).where(eq(securityAnswers.userId, uid)),
       ])
       return Response.json({ ok: true })
     }

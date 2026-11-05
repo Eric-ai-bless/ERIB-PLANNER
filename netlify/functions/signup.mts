@@ -1,7 +1,9 @@
 import { admin, verifyRequestOrigin, AuthError } from '@netlify/identity'
 import type { Config } from '@netlify/functions'
+import { normBirthday, normFood, saveAnswers } from '../../db/security.js'
 
-// Creates an account with first name, second name, email and password.
+// Creates an account with first name, second name, email, password, and the birthday /
+// favorite food answers used to reset a forgotten password.
 // The username is the user's first and second name only (e.g. "Eric Bless").
 // Accounts are created already confirmed, so no verification email is sent.
 const NAME_RE = /^\p{L}[\p{L}'-]{1,29}$/u
@@ -30,6 +32,10 @@ export default async (req: Request) => {
       { error: 'Please enter your first name and second name (letters only, one name in each box).' },
       { status: 422 },
     )
+  if (!normBirthday(body?.birthday))
+    return Response.json({ error: 'Please enter your birthday. It is used to reset your password if you forget it.' }, { status: 422 })
+  if (normFood(body?.food).length < 2)
+    return Response.json({ error: 'Please enter your favorite food. It is used to reset your password if you forget it.' }, { status: 422 })
   const username = `${firstName} ${lastName}`
   if (!EMAIL_RE.test(email) || email.length > 254)
     return Response.json({ error: 'Please enter a valid email address.' }, { status: 422 })
@@ -42,6 +48,11 @@ export default async (req: Request) => {
       password,
       data: { user_metadata: { username, first_name: firstName, last_name: lastName, full_name: username } },
     })
+    try {
+      await saveAnswers(user.id, email, body?.birthday, body?.food)
+    } catch (e) {
+      console.error('Saving security answers failed', e)
+    }
     return Response.json({ ok: true, id: user.id })
   } catch (e) {
     const msg = e instanceof AuthError ? e.message : ''

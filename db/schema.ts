@@ -121,3 +121,20 @@ export const payments = pgTable(
   },
   (t) => [index('payments_paid_idx').on(t.paidAt), index('payments_user_idx').on(t.userId)],
 )
+
+// Password-reset security answers (birthday and favorite food), stored as salted scrypt hashes only.
+export const securityAnswers = pgTable('security_answers', {
+  userId: text('user_id').primaryKey(),
+  email: text().notNull(),
+  salt: text().notNull(),
+  birthdayHash: text('birthday_hash').notNull(),
+  foodHash: text('food_hash').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [index('security_answers_email_idx').on(t.email)])
+
+// Failed reset attempts per email, to stop guessing.
+export const resetAttempts = pgTable('reset_attempts', {
+  email: text().primaryKey(),
+  failures: integer().notNull().default(0),
+  windowStart: timestamp('window_start').defaultNow().notNull(),
+})
