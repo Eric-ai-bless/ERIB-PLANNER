@@ -55,7 +55,7 @@ export default async (req: Request) => {
       if (pw.length < 6 || pw.length > 128) return Response.json({ error: 'The new password must be at least 6 characters.' }, { status: 422 })
       await idAdmin.updateUser(user.id, { password: pw })
       // The one-time initial admin password must never overwrite a password the owner chose.
-      if ((user.email || '').toLowerCase() === OWNER_EMAIL) await setSetting('owner_password_set', new Date().toISOString())
+      if ((user.email || '').toLowerCase() === OWNER_EMAIL) await setSetting('owner_password_set_v2', new Date().toISOString())
       return Response.json({ ok: true })
     }
     if (await isSuspended(user.id)) return Response.json({ error: SUSPENDED_MSG }, { status: 403 })
