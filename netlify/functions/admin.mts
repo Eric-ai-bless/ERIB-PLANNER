@@ -2,13 +2,14 @@ import type { Config } from '@netlify/functions'
 import { admin as idAdmin, getUser, verifyRequestOrigin } from '@netlify/identity'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db/index.js'
-import { lessonPlans, paymentMethods, subscriptionPlans, upgradeRequests, usage, userSubscriptions } from '../../db/schema.js'
-import { OWNER_EMAIL, ensurePlans, isAdmin, monthKey, resolve } from '../../db/subs.js'
+import { lessonPlans, paymentMethods, payments, subscriptionPlans, upgradeRequests, usage, userSubscriptions } from '../../db/schema.js'
+import { OWNER_EMAIL, ensurePlans, getSettings, isAdmin, monthKey, resolve, setSetting } from '../../db/subs.js'
 
 // Admin-only API.
 //   GET  /api/admin           -> users (with plan & usage), plans, payment methods, upgrade requests
 //   POST /api/admin {action}  -> savePlan, deletePlan, savePayment, deletePayment,
-//                                 setUserPlan, setRole, deleteUser, decideRequest
+//                                 setUserPlan, setRole, suspendUser, deleteUser, decideRequest,
+//                                 saveMoney, deleteMoney (payments received), saveSettings (WhatsApp number)
 const str = (v: unknown, n = 200) => String(v ?? '').trim().slice(0, n)
 const lim = (v: unknown) => (v === null || v === undefined || v === '' ? null : Math.max(0, Math.floor(Number(v)) || 0))
 const err = (m: string, s = 400) => Response.json({ error: m }, { status: s })
@@ -47,7 +48,7 @@ export default async (req: Request) => {
   if (!(await isAdmin(me))) return err('Admins only.', 403)
 
   if (req.method === 'GET') {
-    const [users, plans, pms, reqs, subs, use, counts] = await Promise.all([
+    const [users, plans, pms, reqs, subs, use, counts, money, settings] = await Promise.all([
       allUsers(),
       ensurePlans(),
       db.select().from(paymentMethods).orderBy(paymentMethods.sortOrder, paymentMethods.id),
@@ -55,7 +56,15 @@ export default async (req: Request) => {
       db.select().from(userSubscriptions),
       db.select().from(usage).where(eq(usage.month, monthKey())),
       db.select({ userId: lessonPlans.userId, id: lessonPlans.id }).from(lessonPlans),
+      db.select().from(payments).orderBy(desc(payments.paidAt), desc(payments.id)).limit(2000),
+      getSettings(),
     ])
+    const paid: Record<string, Record<string, number>> = {}
+    money.forEach((p) => {
+      if (!p.userId) return
+      const t = (paid[p.userId] ||= {})
+      t[p.currency] = (t[p.currency] || 0) + p.amount
+    })
     const saved: Record<string, number> = {}
     counts.forEach((c) => (saved[c.userId] = (saved[c.userId] || 0) + 1))
     return Response.json({
@@ -65,6 +74,8 @@ export default async (req: Request) => {
       plans,
       paymentMethods: pms,
       requests: reqs,
+      payments: money,
+      settings: { whatsapp: settings.whatsapp || '' },
       users: users.map((u) => {
         const sub = subs.find((s) => s.userId === u.id)
         const us = use.find((x) => x.userId === u.id)
@@ -81,6 +92,9 @@ export default async (req: Request) => {
           ...resolve(plans, sub),
           used: { lessons: us?.lessons ?? 0, exercises: us?.exercises ?? 0 },
           saved: saved[u.id] || 0,
+          suspended: !!sub?.suspended,
+          suspendedReason: sub?.suspended ? sub.suspendedReason : '',
+          paid: paid[u.id] || {},
         }
       }),
     })
@@ -162,6 +176,62 @@ export default async (req: Request) => {
       await idAdmin.updateUser(uid, { app_metadata: { ...(u.appMetadata || {}), roles: [...roles] } })
       return Response.json({ ok: true })
     }
+    case 'suspendUser': {
+      const uid = str(b.userId, 100)
+      if (!uid) return err('Missing user')
+      const stop = !!b.suspended
+      if (stop) {
+        if (uid === me.id) return err('You cannot stop your own account.')
+        const u = await idAdmin.getUser(uid).catch(() => null)
+        if (!u) return err('User not found', 404)
+        if ((u.email || '').toLowerCase() === OWNER_EMAIL) return err('The owner account cannot be stopped.')
+      }
+      const v = { suspended: stop, suspendedReason: stop ? str(b.reason, 300) : '', updatedAt: new Date() }
+      await db.insert(userSubscriptions).values({ userId: uid, ...v }).onConflictDoUpdate({ target: userSubscriptions.userId, set: v })
+      return Response.json({ ok: true })
+    }
+    case 'saveMoney': {
+      const amount = Math.floor(Number(b.amount))
+      if (!Number.isFinite(amount) || amount <= 0) return err('Enter the amount received.')
+      const uid = str(b.userId, 100)
+      let email = str(b.email, 200)
+      let name = str(b.name, 120)
+      if (uid) {
+        const u = await idAdmin.getUser(uid).catch(() => null)
+        if (u) {
+          const m = u.userMetadata || {}
+          email = u.email || email
+          name = String(m.username || m.full_name || u.name || name)
+        }
+      }
+      if (!uid && !name && !email) return err('Choose the user who paid, or type their name.')
+      const paidAt = b.paidAt ? new Date(b.paidAt) : new Date()
+      const v = {
+        userId: uid,
+        email,
+        name,
+        amount,
+        currency: str(b.currency, 8).toUpperCase() || 'RWF',
+        method: str(b.method, 80),
+        reference: str(b.reference, 120),
+        planId: Number(b.planId) || null,
+        note: str(b.note, 300),
+        paidAt: isNaN(paidAt.getTime()) ? new Date() : paidAt,
+      }
+      const [row] = id
+        ? await db.update(payments).set(v).where(eq(payments.id, id)).returning()
+        : await db.insert(payments).values(v).returning()
+      return row ? Response.json(row) : err('Payment not found', 404)
+    }
+    case 'deleteMoney':
+      await db.delete(payments).where(eq(payments.id, id))
+      return Response.json({ ok: true })
+    case 'saveSettings': {
+      const wa = str(b.whatsapp, 30).replace(/[^\d+]/g, '')
+      if (wa && wa.replace(/\D/g, '').length < 8) return err('Enter the full WhatsApp number with country code, e.g. +250788123456.')
+      await setSetting('whatsapp', wa)
+      return Response.json({ ok: true })
+    }
     case 'deleteUser': {
       const uid = str(b.userId, 100)
       if (uid === me.id) return err('You cannot delete your own account here.')
@@ -185,6 +255,21 @@ export default async (req: Request) => {
         const plan = (await ensurePlans()).find((p) => p.id === r.planId)
         if (!plan) return err('The requested plan no longer exists.')
         await setPlan(r.userId, { planId: plan.id, days: plan.durationDays, resetUsage: !!b.resetUsage, note: 'Approved request #' + r.id })
+        if (b.recordPayment !== false && plan.price > 0) {
+          const [pm] = r.paymentMethodId ? await db.select().from(paymentMethods).where(eq(paymentMethods.id, r.paymentMethodId)) : []
+          await db.insert(payments).values({
+            userId: r.userId,
+            email: r.email,
+            name: r.name,
+            amount: plan.price,
+            currency: plan.currency,
+            method: pm?.name || '',
+            reference: r.reference,
+            planId: plan.id,
+            requestId: r.id,
+            note: 'Upgrade request #' + r.id + ' approved',
+          })
+        }
       }
       await db.update(upgradeRequests).set({ status: approve ? 'approved' : 'rejected', decidedAt: new Date() }).where(eq(upgradeRequests.id, id))
       return Response.json({ ok: true })

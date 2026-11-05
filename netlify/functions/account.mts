@@ -3,7 +3,7 @@ import { getUser, verifyRequestOrigin } from '@netlify/identity'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { paymentMethods, upgradeRequests } from '../../db/schema.js'
-import { ensurePlans, entitlement, isAdmin } from '../../db/subs.js'
+import { SUSPENDED_MSG, ensurePlans, entitlement, getSettings, isAdmin, isSuspended } from '../../db/subs.js'
 
 // The signed-in user's subscription.
 //   GET  /api/account  -> current plan, limits, this month's usage, plans, payment methods, my upgrade requests
@@ -15,19 +15,22 @@ export default async (req: Request) => {
   if (!user) return Response.json({ error: 'Please sign in.' }, { status: 401 })
 
   if (req.method === 'GET') {
-    const [ent, plans, pms, reqs, adm] = await Promise.all([
+    const [ent, plans, pms, reqs, adm, settings] = await Promise.all([
       entitlement(user.id),
       ensurePlans(),
       db.select().from(paymentMethods).where(eq(paymentMethods.active, true)).orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.id)),
       db.select().from(upgradeRequests).where(eq(upgradeRequests.userId, user.id)).orderBy(desc(upgradeRequests.createdAt)).limit(20),
       isAdmin(user),
+      getSettings(),
     ])
     return Response.json({
       ...ent,
       isAdmin: adm,
+      email: user.email || '',
       plans: plans.filter((p) => p.active),
       paymentMethods: pms,
       requests: reqs,
+      whatsapp: settings.whatsapp || '',
     })
   }
 
@@ -37,6 +40,7 @@ export default async (req: Request) => {
     } catch {
       return Response.json({ error: 'Request not allowed' }, { status: 403 })
     }
+    if (await isSuspended(user.id)) return Response.json({ error: SUSPENDED_MSG }, { status: 403 })
     const body: any = await req.json().catch(() => ({}))
     const planId = Number(body?.planId) || 0
     const pmId = Number(body?.paymentMethodId) || null

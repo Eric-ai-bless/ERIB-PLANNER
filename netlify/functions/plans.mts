@@ -3,6 +3,7 @@ import { getUser, verifyRequestOrigin } from '@netlify/identity'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { lessonPlans } from '../../db/schema.js'
+import { SUSPENDED_MSG, isSuspended } from '../../db/subs.js'
 
 // Saved lesson plans of the signed-in user.
 //   GET    /api/plans          -> list (summary)
@@ -16,6 +17,7 @@ export default async (req: Request) => {
   const user = await getUser()
   if (!user) return Response.json({ error: 'Please sign in to use saved plans.' }, { status: 401 })
   const uid = user.id
+  if (await isSuspended(uid)) return Response.json({ error: SUSPENDED_MSG, suspended: true }, { status: 403 })
   const url = new URL(req.url)
   const id = Number(url.searchParams.get('id')) || 0
 

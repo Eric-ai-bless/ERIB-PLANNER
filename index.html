@@ -82,6 +82,10 @@ body[data-view=sub] #dash,body[data-view=sub] .vnew,body[data-view=sub] #saved,b
 label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input{width:auto;margin:0}
 .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--acc);color:var(--acc);margin-left:4px}.badge.w{border-color:var(--warn);color:var(--warn)}
 .pre{white-space:pre-wrap;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:6px 0}
+.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff!important;border-radius:8px;padding:8px 14px;font-weight:700;text-decoration:none;font-size:14px}.wa:hover{filter:brightness(.95)}.wa svg{width:18px;height:18px;fill:currentColor}
+#susp{border:1px solid var(--warn);color:var(--warn);background:var(--card);border-radius:10px;padding:12px 14px;margin:0 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}#susp span{flex:1;min-width:200px}
+#drawer a.dwa{color:#1a8f4a}
+.money{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0 12px}
 .amsg{font-size:13px;color:var(--mut)}.amsg.err{color:var(--warn)}
 @media print{
  @page{size:A4;margin:8mm}
@@ -123,10 +127,12 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
  <a href="#saved" data-v="saved">My saved lesson plans</a>
  <a href="#subscription" data-v="sub">Subscription</a>
  <a href="#admin" data-v="admin" id="dadm" hidden>Admin</a>
+ <a href="#" id="dwa" class="dwa" target="_blank" rel="noopener" hidden>Contact admin on WhatsApp</a>
  <div class="sp"></div>
  <a href="#" id="dsignout">Sign out</a>
 </nav>
 <main>
+<div id="susp" class="noprint" hidden></div>
 <section class="card noprint" id="dash">
  <h2 id="dhi">Welcome</h2>
  <p class="note" style="margin-top:2px">Your lesson planning at a glance.</p>
@@ -183,7 +189,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px}label.chk input
 </section>
 
 <section class="card noprint" id="subv"><h2 style="margin:0;font-size:20px">My subscription</h2><div id="subbody"><p class="dempty">Loading…</p></div></section>
-<section class="card noprint" id="admv"><h2 style="margin:0 0 10px;font-size:20px">Admin</h2><div class="atabs" id="atabs"><button type="button" data-t="users">Users</button><button type="button" data-t="reqs">Upgrade requests</button><button type="button" data-t="plans">Subscription plans</button><button type="button" data-t="pay">Payment methods</button></div><div id="admbody"><p class="dempty">Loading…</p></div></section>
+<section class="card noprint" id="admv"><h2 style="margin:0 0 10px;font-size:20px">Admin</h2><div class="atabs" id="atabs"><button type="button" data-t="users">Users</button><button type="button" data-t="reqs">Upgrade requests</button><button type="button" data-t="plans">Subscription plans</button><button type="button" data-t="money">Payments received</button><button type="button" data-t="pay">Payment methods</button><button type="button" data-t="settings">Settings</button></div><div id="admbody"><p class="dempty">Loading…</p></div></section>
 <section class="card vnew" id="out" hidden>
  <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><button class="alt" id="sv">Save plan</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
  <div class="sheet"><div id="paper"></div></div>
@@ -543,6 +549,9 @@ async function call(url,method,body){const r=await fetch(url,{method:method||'GE
 const lim=v=>v==null?'Unlimited':String(v);
 const money=p=>p.price?Number(p.price).toLocaleString()+' '+p.currency:'Free';
 const day=d=>d?new Date(d).toLocaleDateString():'';
+const WAI='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>';
+const waUrl=(num,text)=>num?'https://wa.me/'+String(num).replace(/\D/g,'')+(text?'?text='+encodeURIComponent(text):''):'';
+function waBtn(num,label,text){const a=el('a','wa');a.href=waUrl(num,text);a.target='_blank';a.rel='noopener';a.innerHTML=WAI;a.appendChild(document.createTextNode(label));return a}
 const nextMonth=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1).toLocaleDateString()};
 function form(fields,vals,label,onsave,oncancel){const f=el('form','aform'),g=el('div','grid');
  fields.forEach(d=>{const l=el('label',d.wide?'wide':'',d.label);let i;
@@ -563,15 +572,21 @@ function meter(lbl,used,max){const r=el('div','use'),b=el('div','meter'),i=el('i
 
 // ---------- user subscription ----------
 let ACC=null,PICK=0;
-window.clearAccount=()=>{ACC=null;PICK=0;$('dadm').hidden=true;['kPlan','kLes','kEx'].forEach(k=>$(k).textContent='–');$('quota').textContent=''};
+window.clearAccount=()=>{ACC=null;PICK=0;$('dadm').hidden=true;$('dwa').hidden=true;$('susp').hidden=true;['kPlan','kLes','kEx'].forEach(k=>$(k).textContent='–');$('quota').textContent=''};
 window.loadAccount=async function(){try{ACC=await call('/api/account')}catch(e){$('subbody').innerHTML='';$('subbody').appendChild(el('p','dempty','Could not load your subscription: '+e.message));return}
  renderAcc();if(document.body.dataset.view==='admin'&&ACC.isAdmin&&!ADM)loadAdmin()};
 function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
+ const who=($('uname').textContent||'')+(a.email?' ('+a.email+')':'');
+ const dw=$('dwa');dw.hidden=!a.whatsapp;if(a.whatsapp)dw.href=waUrl(a.whatsapp,'Hello admin, I am '+who+' from ERIB CBC LESSON PLANNER. ');
+ const sp=$('susp');sp.hidden=!a.suspended;sp.innerHTML='';
+ if(a.suspended){sp.appendChild(el('span','','Your account has been stopped by the admin, so you cannot create or save lesson plans right now.'+(a.suspendedReason?' Reason: '+a.suspendedReason:'')+' Please contact the admin to restore access.'));
+  if(a.whatsapp)sp.appendChild(waBtn(a.whatsapp,'Contact admin on WhatsApp','Hello admin, my ERIB CBC LESSON PLANNER account ('+who+') has been stopped. Can you help me restore it?'))}
  $('kPlan').textContent=a.plan?a.plan.name:'–';$('kLes').textContent=a.used.lessons+' / '+lim(a.lessonLimit);$('kEx').textContent=a.used.exercises+' / '+lim(a.exerciseLimit);
  $('quota').textContent=(a.plan?a.plan.name+' plan: ':'')+(a.lessonLimit==null?'unlimited lesson plans':Math.max(0,a.lessonLimit-a.used.lessons)+' of '+a.lessonLimit+' lesson plans left this month')+(a.exerciseLimit==null?', unlimited notes & exercises.':', '+Math.max(0,a.exerciseLimit-a.used.exercises)+' of '+a.exerciseLimit+' notes & exercises left.');
  s.innerHTML='';
  const head=el('p','note','Current plan: ');head.appendChild(el('b','',a.plan?a.plan.name:'None'));if(a.customLimits)head.appendChild(el('span','badge','custom limits'));
  head.append(a.expiresAt?' · active until '+day(a.expiresAt):'');s.appendChild(head);
+ if(a.whatsapp){const c=el('div','bar');c.appendChild(waBtn(a.whatsapp,'Contact admin on WhatsApp','Hello admin, I am '+who+' from ERIB CBC LESSON PLANNER. '));c.appendChild(el('span','note','Questions about payment or your plan? Chat with the admin directly.'));s.appendChild(c)}
  if(a.expired)s.appendChild(el('p','note','Your paid plan has expired, so the default plan limits apply again. Choose a plan below to renew.'));
  s.appendChild(el('h3','','This month'));
  s.append(meter('Lesson plans',a.used.lessons,a.lessonLimit),meter('Notes & exercises',a.used.exercises,a.exerciseLimit));
@@ -586,10 +601,11 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
   else if(p.price>0){const b=btn(pend?'Request pending':'Choose this plan',0,()=>{PICK=p.id;renderAcc();$('upf')&&$('upf').scrollIntoView({behavior:'smooth'})});b.disabled=!!pend;c.appendChild(b)}
   cards.appendChild(c)});
  s.appendChild(cards);
- if(pend)s.appendChild(el('p','note','Your upgrade request is waiting for the admin to confirm your payment.'));
+ if(pend){s.appendChild(el('p','note','Your upgrade request is waiting for the admin to confirm your payment.'));
+  if(a.whatsapp){const pp=a.plans.find(x=>x.id===pend.planId);s.appendChild(waBtn(a.whatsapp,'Send payment proof on WhatsApp','Hello admin, I am '+who+'. I paid for the '+(pp?pp.name+' plan ('+money(pp)+')':'plan')+(pend.reference?'. Transaction reference: '+pend.reference:'')+'. Please confirm my upgrade.'))}}
  const pk=a.plans.find(p=>p.id===PICK);
  if(pk&&!pend){const box=el('div','aform');box.id='upf';box.appendChild(el('b','','Upgrade to '+pk.name+' ('+money(pk)+')'));
-  if(!a.paymentMethods.length)box.appendChild(el('p','note','No payment methods have been set up yet. Please contact the admin.'));
+  if(!a.paymentMethods.length){box.appendChild(el('p','note','No payment methods have been set up yet. Please contact the admin.'));if(a.whatsapp)box.appendChild(waBtn(a.whatsapp,'Contact admin on WhatsApp','Hello admin, I am '+who+'. I would like to upgrade to the '+pk.name+' plan. How can I pay?'))}
   else{box.appendChild(el('p','note','1. Pay using one of the methods below. 2. Enter the transaction reference so the admin can confirm it. Your plan is upgraded once the admin approves.'));
    const det=el('div','pre');
    const f=form([{k:'paymentMethodId',label:'Payment method',type:'select',opts:a.paymentMethods.map(m=>[m.id,m.name])},{k:'reference',label:'Transaction reference / ID',ph:'e.g. MoMo transaction ID'},{k:'message',label:'Message to the admin (optional)',type:'textarea',wide:1}],{},'Send upgrade request',
@@ -603,12 +619,12 @@ function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
 }
 
 // ---------- admin ----------
-let ADM=null,TAB='users',EDIT=null,Q='';
+let ADM=null,TAB='users',EDIT=null,Q='',MQ='',PRE=null;
 async function loadAdmin(){const b=$('admbody');if(!ADM)b.innerHTML='<p class="dempty">Loading…</p>';
  try{ADM=await call('/api/admin')}catch(e){b.innerHTML='';b.appendChild(el('p','dempty','Could not load the admin page: '+e.message));return}renderAdm()}
 window.loadAdmin=loadAdmin;
-async function act(body){await call('/api/admin','POST',body);EDIT=null;await loadAdmin();window.loadAccount()}
-document.querySelectorAll('#atabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;EDIT=null;renderAdm()});
+async function act(body){await call('/api/admin','POST',body);EDIT=null;PRE=null;await loadAdmin();window.loadAccount()}
+document.querySelectorAll('#atabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;EDIT=null;PRE=null;renderAdm()});
 const planOpts=()=>ADM.plans.map(p=>[p.id,p.name+(p.isDefault?' (default)':'')+(p.active?'':' (hidden)')]);
 function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
  const pend=A.requests.filter(r=>r.status==='pending').length;
@@ -620,8 +636,10 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
   const list=el('div');b.appendChild(list);
   function draw(){list.innerHTML='';const k=Q.trim().toLowerCase();
    A.users.filter(u=>!k||(u.name+' '+u.email).toLowerCase().includes(k)).forEach(u=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');
-    t.append(el('b','',u.name||'(no name)'),' '+(u.email||''));if(u.isAdmin)t.appendChild(el('span','badge',u.isOwner?'owner':'admin'));if(u.customLimits)t.appendChild(el('span','badge','custom'));
-    t.appendChild(el('br'));t.appendChild(el('small','',(u.plan?u.plan.name:'–')+(u.expiresAt?' until '+day(u.expiresAt):'')+(u.expired?' (expired)':'')+' · lesson plans '+u.used.lessons+'/'+lim(u.lessonLimit)+' · exercises '+u.used.exercises+'/'+lim(u.exerciseLimit)+' · '+u.saved+' saved · joined '+day(u.createdAt)));
+    t.append(el('b','',u.name||'(no name)'),' '+(u.email||''));if(u.isAdmin)t.appendChild(el('span','badge',u.isOwner?'owner':'admin'));if(u.customLimits)t.appendChild(el('span','badge','custom'));if(u.suspended)t.appendChild(el('span','badge w','stopped'));
+    const pd=Object.entries(u.paid||{}).map(([c,v])=>Number(v).toLocaleString()+' '+c).join(' + ');
+    t.appendChild(el('br'));t.appendChild(el('small','',(u.plan?u.plan.name:'–')+(u.expiresAt?' until '+day(u.expiresAt):'')+(u.expired?' (expired)':'')+' · lesson plans '+u.used.lessons+'/'+lim(u.lessonLimit)+' · exercises '+u.used.exercises+'/'+lim(u.exerciseLimit)+' · '+u.saved+' saved · paid '+(pd||'0')+' · joined '+day(u.createdAt)));
+    if(u.suspended&&u.suspendedReason){t.appendChild(el('br'));t.appendChild(el('small','','Stopped: '+u.suspendedReason))}
     h.append(t,btn(EDIT===u.id?'Close':'Edit',0,()=>{EDIT=EDIT===u.id?null:u.id;draw()}));row.appendChild(h);
     if(EDIT===u.id){const s=u.sub||{};
      row.appendChild(form([
@@ -636,7 +654,10 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
       o=>act(Object.assign({action:'setUserPlan',userId:u.id},o,{expiresAt:o.expiresAt?o.expiresAt+'T23:59:59':null})),()=>{EDIT=null;draw()}));
      const bar=el('div','bar');
      if(!u.isOwner)bar.appendChild(btn(u.isAdmin?'Remove admin role':'Make admin',1,async e=>{e.target.disabled=true;try{await act({action:'setRole',userId:u.id,admin:!u.isAdmin})}catch(x){alert(x.message);e.target.disabled=false}}));
-     if(!u.isOwner&&u.id!==A.me)bar.appendChild(btn('Delete user',1,async e=>{if(!confirm('Delete '+(u.name||u.email)+' and all their saved lesson plans? This cannot be undone.'))return;e.target.disabled=true;try{await act({action:'deleteUser',userId:u.id})}catch(x){alert(x.message);e.target.disabled=false}}));
+     bar.appendChild(btn('Record payment',1,()=>{TAB='money';EDIT='newmoney';PRE={userId:u.id};renderAdm()}));
+     if(!u.isOwner&&u.id!==A.me)bar.appendChild(btn(u.suspended?'Restore user':'Stop user',1,async e=>{let reason='';if(!u.suspended){reason=prompt('Stop '+(u.name||u.email)+'? They will not be able to create or save lesson plans until you restore them.\n\nReason (optional, shown to the user):','');if(reason===null)return}
+      e.target.disabled=true;try{await act({action:'suspendUser',userId:u.id,suspended:!u.suspended,reason})}catch(x){alert(x.message);e.target.disabled=false}}));
+     if(!u.isOwner&&u.id!==A.me)bar.appendChild(btn('Delete user',1,async e=>{if(!confirm('Delete '+(u.name||u.email)+' and all their saved lesson plans? This cannot be undone. Their recorded payments are kept.'))return;e.target.disabled=true;try{await act({action:'deleteUser',userId:u.id})}catch(x){alert(x.message);e.target.disabled=false}}));
      row.appendChild(bar)}
     list.appendChild(row)});
    if(!list.children.length)list.appendChild(el('p','dempty','No users found.'))}
@@ -649,7 +670,7 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
    t.appendChild(el('small','','Wants '+pn(r.planId)+(pm(r.paymentMethodId)?' · paid with '+pm(r.paymentMethodId):'')+(r.reference?' · ref: '+r.reference:' · no reference')+' · '+new Date(r.createdAt).toLocaleString()));
    if(r.message){t.appendChild(el('br'));t.appendChild(el('small','','“'+r.message+'”'))}
    h.appendChild(t);
-   if(r.status==='pending'){const go=ok=>async e=>{if(ok&&!confirm('Approve and move this user to '+pn(r.planId)+'?'))return;e.target.disabled=true;try{await act({action:'decideRequest',id:r.id,approve:ok})}catch(x){alert(x.message);e.target.disabled=false}};
+   if(r.status==='pending'){const go=ok=>async e=>{const rp=A.plans.find(x=>x.id===r.planId);if(ok&&!confirm('Approve and move this user to '+pn(r.planId)+'?'+(rp&&rp.price?'\n\nThe payment of '+money(rp)+' is recorded under “Payments received”.':'')))return;e.target.disabled=true;try{await act({action:'decideRequest',id:r.id,approve:ok})}catch(x){alert(x.message);e.target.disabled=false}};
     h.append(btn('Approve',0,go(true)),btn('Reject',1,go(false)))}
    row.appendChild(h);b.appendChild(row)})}
  if(TAB==='plans'){
@@ -665,6 +686,40 @@ function renderAdm(){const b=$('admbody'),A=ADM;b.innerHTML='';
    h.append(t,btn(EDIT==='p'+p.id?'Close':'Edit',0,()=>{EDIT=EDIT==='p'+p.id?null:'p'+p.id;renderAdm()}));
    if(!p.isDefault)h.appendChild(btn('Delete',1,async e=>{if(!confirm('Delete the plan “'+p.name+'”? Users on it go back to the default plan.'))return;try{await act({action:'deletePlan',id:p.id})}catch(x){alert(x.message)}}));
    row.appendChild(h);if(EDIT==='p'+p.id)row.appendChild(form(F,p,'Save plan',o=>act(Object.assign({action:'savePlan',id:p.id},o)),()=>{EDIT=null;renderAdm()}));b.appendChild(row)})}
+ if(TAB==='money'){
+  const sum=list=>{const t={};list.forEach(p=>t[p.currency]=(t[p.currency]||0)+p.amount);return Object.entries(t).map(([c,v])=>v.toLocaleString()+' '+c).join(' + ')||'0'};
+  const mk=d=>new Date(d).toISOString().slice(0,7),now=A.month,last=(()=>{const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);return d.toISOString().slice(0,7)})();
+  const P=A.payments,tiles=el('div','money');
+  [['This month',P.filter(p=>mk(p.paidAt)===now)],['Last month',P.filter(p=>mk(p.paidAt)===last)],['All time',P],['Payments recorded',null]].forEach(([l,v])=>{const t=el('div','tile');t.append(el('small','',l),el('b','',v?sum(v):String(P.length)));tiles.appendChild(t)});
+  b.appendChild(tiles);
+  b.appendChild(el('p','note','Every approved upgrade request is recorded here automatically. Add payments you received another way (cash, MoMo sent directly, WhatsApp) with “Record payment”.'));
+  const uo=[['','— Not a registered user —']].concat(A.users.map(u=>[u.id,(u.name||'(no name)')+' · '+(u.email||'')]));
+  const F=[{k:'userId',label:'User who paid',type:'select',opts:uo,wide:1},{k:'name',label:'Name (if not a registered user)'},{k:'amount',label:'Amount',type:'number'},{k:'currency',label:'Currency'},
+   {k:'paidAt',label:'Date paid',type:'date'},{k:'method',label:'Paid with',ph:'e.g. MTN MoMo'},{k:'reference',label:'Transaction reference'},
+   {k:'planId',label:'For plan (optional)',type:'select',opts:[['','—']].concat(A.plans.map(p=>[p.id,p.name]))},{k:'note',label:'Note',wide:1}];
+  const save=(id,email)=>o=>act(Object.assign({action:'saveMoney',id,email:email||''},o,{paidAt:o.paidAt?o.paidAt+'T12:00:00':null}));
+  b.appendChild(btn('+ Record payment',0,()=>{EDIT='newmoney';PRE=null;renderAdm()}));
+  if(EDIT==='newmoney'){const pu=PRE&&A.users.find(u=>u.id===PRE.userId),pp=pu&&pu.plan&&A.plans.find(p=>p.id===pu.plan.id);
+   b.appendChild(form(F,{userId:pu?pu.id:'',currency:(pp&&pp.currency)||'RWF',amount:pp&&pp.price?pp.price:'',planId:pp&&pp.price?pp.id:'',paidAt:new Date().toISOString().slice(0,10),method:A.paymentMethods[0]?A.paymentMethods[0].name:''},'Save payment',save(0),()=>{EDIT=null;PRE=null;renderAdm()}))}
+  const q=el('input');q.placeholder='Search by name, email, reference or method';q.value=MQ;b.appendChild(q);
+  const list=el('div');b.appendChild(list);const tot=el('p','note');b.appendChild(tot);
+  function draw(){list.innerHTML='';const k=MQ.trim().toLowerCase(),rows=P.filter(p=>!k||[p.name,p.email,p.reference,p.method,p.note].join(' ').toLowerCase().includes(k));
+   rows.forEach(p=>{const row=el('div','arow'),h=el('div','hd'),t=el('span');
+    t.append(el('b','',Number(p.amount).toLocaleString()+' '+p.currency),' · '+(p.name||p.email||'(unknown)')+(p.email&&p.name?' · '+p.email:''));
+    if(p.userId&&!A.users.some(u=>u.id===p.userId))t.appendChild(el('span','badge w','deleted user'));
+    t.appendChild(el('br'));t.appendChild(el('small','',day(p.paidAt)+(p.method?' · '+p.method:'')+(p.reference?' · ref: '+p.reference:'')+(p.planId?' · '+pn(p.planId):'')+(p.note?' · '+p.note:'')));
+    h.append(t,btn(EDIT==='$'+p.id?'Close':'Edit',0,()=>{EDIT=EDIT==='$'+p.id?null:'$'+p.id;renderAdm()}),btn('Delete',1,async e=>{if(!confirm('Delete this payment of '+Number(p.amount).toLocaleString()+' '+p.currency+'?'))return;e.target.disabled=true;try{await act({action:'deleteMoney',id:p.id})}catch(x){alert(x.message);e.target.disabled=false}}));
+    row.appendChild(h);
+    if(EDIT==='$'+p.id)row.appendChild(form(F,Object.assign({},p,{userId:p.userId||'',planId:p.planId||'',paidAt:String(p.paidAt).slice(0,10)}),'Save payment',save(p.id,p.email),()=>{EDIT=null;renderAdm()}));
+    list.appendChild(row)});
+   if(!rows.length)list.appendChild(el('p','dempty',P.length?'No payments match.':'No payments recorded yet.'));
+   tot.textContent=k&&rows.length?'Total of the payments shown: '+sum(rows):''}
+  q.oninput=()=>{MQ=q.value;draw()};draw()}
+ if(TAB==='settings'){
+  b.appendChild(el('h3','','WhatsApp contact'));
+  b.appendChild(el('p','note','Users see a “Contact admin on WhatsApp” button in the menu and on their Subscription page, with a message already written for them. Leave empty to hide the button.'));
+  b.appendChild(form([{k:'whatsapp',label:'Admin WhatsApp number (with country code)',ph:'e.g. +250788123456'}],A.settings,'Save',o=>act({action:'saveSettings',whatsapp:o.whatsapp})));
+  if(A.settings.whatsapp){const c=el('div','bar');c.appendChild(waBtn(A.settings.whatsapp,'Test the WhatsApp link','Test'));b.appendChild(c)}}
  if(TAB==='pay'){
   b.appendChild(el('p','note','Payment methods are shown to users when they request an upgrade. Put the instructions in the details, e.g. the MoMo number and account name.'));
   const F=[{k:'name',label:'Name',ph:'e.g. MTN Mobile Money'},{k:'sortOrder',label:'Display order',type:'number'},{k:'details',label:'Payment details / instructions',type:'textarea',wide:1,ph:'e.g. Send to 078XXXXXXX (Name). Use your email as the reason.'},{k:'active',label:'Visible to users',type:'checkbox'}];

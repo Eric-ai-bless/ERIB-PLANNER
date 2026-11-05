@@ -56,6 +56,9 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   customLimits: boolean('custom_limits').notNull().default(false),
   expiresAt: timestamp('expires_at'),
   note: text().notNull().default(''),
+  // A suspended (stopped) user can sign in but cannot generate or save lesson plans.
+  suspended: boolean().notNull().default(false),
+  suspendedReason: text('suspended_reason').notNull().default(''),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
@@ -89,4 +92,32 @@ export const upgradeRequests = pgTable(
     decidedAt: timestamp('decided_at'),
   },
   (t) => [index('upgrade_requests_status_idx').on(t.status, t.createdAt)],
+)
+
+// Simple key/value settings managed by the admin (e.g. the admin's WhatsApp number).
+export const appSettings = pgTable('app_settings', {
+  key: text().primaryKey(),
+  value: text().notNull().default(''),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Money received from users, recorded by the admin (manually or when approving an upgrade request).
+export const payments = pgTable(
+  'payments',
+  {
+    id: serial().primaryKey(),
+    userId: text('user_id').notNull().default(''),
+    email: text().notNull().default(''),
+    name: text().notNull().default(''),
+    amount: integer().notNull().default(0),
+    currency: text().notNull().default('RWF'),
+    method: text().notNull().default(''),
+    reference: text().notNull().default(''),
+    planId: integer('plan_id'),
+    requestId: integer('request_id'),
+    note: text().notNull().default(''),
+    paidAt: timestamp('paid_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [index('payments_paid_idx').on(t.paidAt), index('payments_user_idx').on(t.userId)],
 )
