@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ERIB PLANNER</title>
+<style>
+:root{--bg:#f5f7f4;--card:#fff;--ink:#1c2a22;--mut:#5b6b61;--line:#cfd8d2;--acc:#0b6b3a;--accink:#fff;--head:#e4e4e4;--warn:#9a5b00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a15;--card:#18241d;--ink:#e8efe9;--mut:#9fb0a5;--line:#2f4036;--acc:#4cc38a;--accink:#06210f;--head:#2a3a30;--warn:#e0a648}}
+:root[data-theme="dark"]{--bg:#111a15;--card:#18241d;--ink:#e8efe9;--mut:#9fb0a5;--line:#2f4036;--acc:#4cc38a;--accink:#06210f;--head:#2a3a30;--warn:#e0a648}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--acc);color:var(--accink);padding:16px 20px}
+header h1{margin:0;font-size:20px}header p{margin:2px 0 0;opacity:.9;font-size:13px}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:block;font-size:12px;color:var(--mut);font-weight:600}
+input,select,textarea{width:100%;margin-top:3px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.wide{grid-column:1/-1}
+button{font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:var(--accink);cursor:pointer}
+button.alt{background:transparent;color:var(--acc)}button:disabled{opacity:.6;cursor:wait}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+#msg{font-size:13px;color:var(--mut)}#msg.err{color:var(--warn)}
+.note{font-size:12px;color:var(--mut);margin:8px 0 0}
+.sheet{overflow-x:auto}
+#paper{min-width:720px;background:#fff;color:#000;padding:14px;font:11px/1.3 "Times New Roman",serif}
+#paper h2{text-align:center;margin:0 0 6px;font-size:16px}
+#paper .sc{margin-bottom:6px}
+#paper table{border-collapse:collapse;width:100%;table-layout:fixed}
+#paper td{border:1px solid #000;padding:2px 4px;vertical-align:top;white-space:pre-wrap;word-wrap:break-word}
+#paper td.h{background:#e4e4e4;font-weight:bold}#paper td.i{font-style:italic;text-align:center}
+#paper td[contenteditable]:focus{outline:2px solid #0b6b3a;outline-offset:-2px;background:#fffbe0}
+#nbox{background:#fff;color:#000;padding:16px;border-radius:6px;font:15px/1.5 "Times New Roman",serif}#nbox [data-t=h1]{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}#nbox [data-t=h2]{font-size:17px;font-weight:700;margin-top:12px}#nbox [data-t=li]{padding-left:18px;text-indent:-12px}#nbox [data-t=li]::before{content:"\2022  "}
+@media print{
+ @page{size:A4;margin:8mm}
+ body{background:#fff}header,.noprint{display:none!important}
+ main{padding:0;max-width:none}.card{border:0;padding:0;margin:0}.sheet{overflow:visible}
+ #paper{min-width:0;padding:0;font-size:8.5pt}
+}
+</style>
+</head>
+<body>
+<header><h1>ERIB PLANNER</h1><p>Fill in the basics, get a complete one-page lesson plan in the REB template, then download it as Word or PDF.</p></header>
+<main>
+<section class="card noprint">
+ <div class="grid">
+  <label class="wide">School name<input id="school" placeholder="e.g. Charles Lwanga Primary School"></label>
+  <label class="wide">Teacher’s name<input id="teacher"></label>
+  <label>Term<select id="term"><option>I</option><option>II</option><option>III</option></select></label>
+  <label>Date<input id="date" type="date"></label>
+  <label>Subject<input id="subject" list="subs" placeholder="Type or choose"></label>
+  <label>Class<input id="cls" placeholder="e.g. S2B"></label>
+  <label>Unit No<input id="unit" placeholder="e.g. Unit 4"></label>
+  <label>Lesson No<input id="lesson" placeholder="e.g. 1/18"></label>
+  <label>Duration (min)<input id="dur" type="number" min="20" max="120" value="40"></label>
+  <label>Class size<input id="size" type="number" min="1" value="40"></label>
+  <label>Template language<select id="lang"><option value="auto">Auto (from subject)</option><option value="en">English</option><option value="fr">Français</option><option value="sw">Kiswahili</option><option value="rw">Kinyarwanda</option></select></label>
+  <label class="wide">Unit title (as in the syllabus)<input id="unitTitle" placeholder="e.g. The education"></label>
+  <label class="wide">Lesson title / topic <span style="font-weight:400">(optional, Claude will pick the next lesson of the unit if empty)</span><input id="topic"></label>
+  <label class="wide">Your own lesson plan template (optional: Word .docx, PDF or text). One document may contain English, French, Kiswahili and Kinyarwanda versions: the one for the chosen template language is used. You can also upload one file per language.<input type="file" id="tplf" accept=".docx,.pdf,.txt,.md" multiple></label>
+  <div class="wide note" id="tpls" style="margin:0"></div>
+  <label class="wide">Upload as many documents as you need, all at once or one by one, for accuracy: revised Student’s Book, Teacher’s Guide, syllabus (optional: PDF, Word or text). It stays in your browser; only the unit you need is sent to Claude.<input type="file" id="bookf" accept=".pdf,.docx,.txt,.md" multiple></label>
+  <label>Book page from<input id="pf" type="number" min="1" placeholder="auto"></label>
+  <label>Book page to<input id="pt" type="number" min="1" placeholder="auto"></label>
+  <div class="wide note" id="books" style="margin:0">Leave the pages empty and the app searches the book for your unit title or lesson topic.</div>
+  <div class="wide" id="docs"></div>
+  <label class="wide">Paste from the book (optional but recommended): unit title, key unit competence, learning objectives or the lesson text from the revised Student’s Book / Teacher’s Guide<textarea id="book" rows="4" placeholder="Open the REB revised book (link below), copy the unit introduction or the lesson you are teaching, and paste it here. The plan will follow it closely."></textarea></label>
+  <label class="wide">Special educational needs in this class (optional)<input id="sen" placeholder="e.g. Slow learner with language difficulties: 2 learners"></label>
+ </div>
+ <datalist id="subs"><option>English</option><option>Kinyarwanda</option><option>Kiswahili</option><option>French</option><option>Mathematics</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Geography</option><option>History and Citizenship</option><option>Entrepreneurship</option><option>Computer Science</option><option>Literature in English</option><option>Economics</option><option>General Studies</option><option>Religious Education</option><option>Physical Education and Sports</option><option>Music</option><option>Fine Art and Crafts</option></datalist>
+ <div class="bar"><button id="go">Generate lesson plan</button><span id="msg"></span></div>
+ <p class="note" id="refs"></p>
+ <p class="note">Without pasted text, Claude drafts the plan from its knowledge of the REB competence-based curriculum. Check the unit title, key unit competence and objectives against your syllabus before use, and edit anything directly in the preview.</p>
+</section>
+
+<section class="card" id="out" hidden>
+ <div class="bar noprint" style="margin:0 0 10px"><button id="dl">Download Word (.docx)</button><button class="alt" id="pr">Download PDF</button><button id="nb">Prepare notes &amp; exercises</button><span id="msg2" style="font-size:13px;color:var(--mut)">Click any cell to edit.</span></div>
+ <div class="sheet"><div id="paper"></div></div>
+</section>
+<section class="card" id="nsec" hidden><div class="bar noprint" style="margin:0 0 10px"><b>Notes &amp; exercises (with marking guide)</b><button id="nw">Download Word (.docx)</button><button class="alt" id="np">Download PDF</button></div><div id="nbox" contenteditable="true"></div><p class="note noprint">Click any line to edit before downloading.</p></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const D={};let U=24;
+$('date').value=new Date().toISOString().slice(0,10);
+try{const s=JSON.parse(localStorage.getItem('lp')||'{}');['school','teacher','term'].forEach(k=>{if(s[k])$(k).value=s[k]})}catch(e){}
+
+const LB={
+en:{t:'LESSON PLAN',sc:'School Name',te:'Teacher’s Name',term:'Term',date:'Date',sub:'Subject',cls:'Class',unit:'Unit No',les:'Lesson No',dur:'Duration',size:'Class size',sen:'Type of special educational needs to be catered for in this lesson and number of learners in each category',ut:'Unit title',kuc:'Key unit competence',lt:'Title of the lesson',obj:'Instructional objectives',loc:'Plan of this class (Location)',mat:'Learning materials',ref:'References',tim:'Timing for each step',desc:'Description of teaching and learning activities',ta:'Teacher’s activity',la:'Learner’s activity',gen:'Generic competences and cross-cutting issues + some explanations',i:'Introduction',d:'Lesson Development',c:'Conclusion',self:'Teacher’s self-evaluation',none:'None identified',name:'English'},
+fr:{t:'PLAN DE LEÇON',sc:'Nom de l’école',te:'Nom de l’enseignant',term:'Trimestre',date:'Date',sub:'Matière',cls:'Classe',unit:'Unité N°',les:'Leçon N°',dur:'Durée',size:'Effectif de la classe',sen:'Type de besoins éducatifs spéciaux à prendre en compte dans cette leçon et nombre d’apprenants dans chaque catégorie',ut:'Titre de l’unité',kuc:'Compétence clé de l’unité',lt:'Titre de la leçon',obj:'Objectifs d’enseignement',loc:'Plan de cette classe (Lieu)',mat:'Matériel didactique',ref:'Références',tim:'Durée de chaque étape',desc:'Description des activités d’enseignement et d’apprentissage',ta:'Activité de l’enseignant',la:'Activité de l’apprenant',gen:'Compétences génériques et thèmes transversaux + quelques explications',i:'Introduction',d:'Développement de la leçon',c:'Conclusion',self:'Auto-évaluation de l’enseignant',none:'Aucun identifié',name:'French'},
+sw:{t:'MPANGO WA SOMO',sc:'Jina la shule',te:'Jina la mwalimu',term:'Muhula',date:'Tarehe',sub:'Somo',cls:'Darasa',unit:'Kitengo Na.',les:'Somo Na.',dur:'Muda',size:'Idadi ya wanafunzi',sen:'Aina ya mahitaji maalum ya kielimu yatakayoshughulikiwa katika somo hili na idadi ya wanafunzi katika kila kundi',ut:'Kichwa cha kitengo',kuc:'Umahiri mkuu wa kitengo',lt:'Kichwa cha somo',obj:'Malengo ya ufundishaji',loc:'Mahali pa somo (Darasa)',mat:'Vifaa vya kufundishia na kujifunzia',ref:'Marejeo',tim:'Muda kwa kila hatua',desc:'Maelezo ya shughuli za ufundishaji na ujifunzaji',ta:'Shughuli za mwalimu',la:'Shughuli za mwanafunzi',gen:'Umahiri wa jumla na masuala mtambuka + maelezo',i:'Utangulizi',d:'Ukuzaji wa somo',c:'Hitimisho',self:'Tathmini binafsi ya mwalimu',none:'Hakuna aliyetambuliwa',name:'Kiswahili'},
+rw:{t:'INGERO Y’ISOMO',sc:'Izina ry’ishuri',te:'Izina ry’umwarimu',term:'Igihembwe',date:'Itariki',sub:'Isomo',cls:'Ikiciro',unit:'Umutwe No',les:'Isomo No',dur:'Igihe',size:'Umubare w’abanyeshuri',sen:'Ubwoko bw’ibyifuzo byihariye mu myigire bizitabwaho muri iri somo n’umubare w’abanyeshuri muri buri cyiciro',ut:'Umutwe w’isomo (Unit)',kuc:'Ubushobozi shingiro bw’umutwe',lt:'Umutwe w’isomo ry’uyu munsi',obj:'Intego z’isomo',loc:'Aho isomo ribera',mat:'Ibikoresho by’isomo',ref:'Ibitabo n’inyandiko byifashishijwe',tim:'Igihe cya buri gice',desc:'Ibisobanuro by’ibikorwa by’ubwigishwa n’ubwiga',ta:'Ibikorwa by’umwarimu',la:'Ibikorwa by’umunyeshuri',gen:'Ubushobozi rusange n’ingingo nsanganyamasomo + ibisobanuro',i:'Intangiriro',d:'Iyigwa ry’isomo',c:'Isozwa ry’isomo',self:'Isuzuma ry’umwarimu ku isomo',none:'Nta wabonetse',name:'Kinyarwanda'}};
+const GLOSS={
+en:'Generic competences: Critical thinking and problem solving; Creativity and innovation; Research; Communication; Cooperation, interpersonal relations and life skills; Lifelong learning. Cross-cutting issues: Inclusive education; Gender education; Peace and values education; Financial education; Environment and sustainability; Genocide studies; Standardisation culture; Comprehensive sexuality education.',
+fr:'Compétences génériques : Pensée critique et résolution de problèmes ; Créativité et innovation ; Recherche ; Communication ; Coopération, relations interpersonnelles et compétences de vie ; Apprentissage tout au long de la vie. Thèmes transversaux : Éducation inclusive ; Éducation au genre ; Éducation à la paix et aux valeurs ; Éducation financière ; Environnement et développement durable ; Études sur le génocide ; Culture de la standardisation ; Éducation complète à la sexualité.',
+sw:'Umahiri wa jumla: Fikra tunduizi na utatuzi wa matatizo; Ubunifu na uvumbuzi; Utafiti; Mawasiliano; Ushirikiano, mahusiano baina ya watu na stadi za maisha; Kujifunza maisha yote. Masuala mtambuka: Elimu jumuishi; Elimu ya jinsia; Elimu ya amani na maadili; Elimu ya fedha; Mazingira na uendelevu; Masomo ya mauaji ya kimbari; Utamaduni wa viwango; Elimu kamili ya kujamiiana.',
+rw:'Ubushobozi rusange: Gutekereza no gukemura ibibazo; Guhanga udushya; Ubushakashatsi; Itumanaho; Imikoranire, ubusabane n’ubumenyi ngiro; Kwiga ubudasiba. Ingingo nsanganyamasomo: Uburezi budaheza; Uburinganire n’ubwuzuzanye; Uburere ku mahoro n’indangagaciro; Uburere ku mikoreshereze y’imari; Ibidukikije n’iterambere rirambye; Amateka ya Jenoside; Umuco wo kugenzura ubuziranenge; Uburere bwuzuye ku buzima bw’imyororokere.'};
+const LK=()=>LB[D.lang]||LB.en;
+function pickLang(){const v=$('lang').value;if(v!=='auto')return v;const x=$('subject').value.toLowerCase();if(x.includes('kinyarwanda'))return'rw';if(x.includes('swahili'))return'sw';if(/fran[cç]ais|french/.test(x))return'fr';return'en'}
+function rows(){
+ const T=LK();
+ const L=(t,k)=>[{t,s:6,h:1},{k,s:18}];
+ const e=(k,s,x)=>Object.assign({k,s},x||{});
+ const ph=(lab,p)=>[e(lab,4,{h:1}),e(p+'T',7),e(p+'L',7),e(p+'C',6)];
+ return [
+  [{t:T.term,s:3,h:1},{t:T.date,s:3,h:1},{t:T.sub,s:4,h:1},{t:T.cls,s:2,h:1},{t:T.unit,s:2,h:1},{t:T.les,s:2,h:1},{t:T.dur,s:4,h:1},{t:T.size,s:4,h:1}],
+  [e('term',3),e('date',3),e('subject',4),e('cls',2),e('unit',2),e('lesson',2),e('dur',4),e('size',4)],
+  [{t:T.sen,s:10,h:1},e('sen',14)],
+  L(T.ut,'unitTitle'),L(T.kuc,'kuc'),L(T.lt,'title'),L(T.obj,'obj'),
+  L(T.loc,'loc'),L(T.mat,'mat'),L(T.ref,'ref'),
+  [{t:T.tim,s:4,h:1},{t:T.desc,s:14,h:1,c:1},{t:T.gen,s:6,h:1,c:1}],
+  [{t:'',s:4,h:1},e('desc',14,{i:1}),{t:'',s:6,h:1}],
+  [{t:'',s:4,h:1},{t:T.ta,s:7,h:1,c:1},{t:T.la,s:7,h:1,c:1},{t:'',s:6,h:1}],
+  ph('iLab','i'),ph('dLab','d'),ph('cLab','c'),
+  [{t:T.self,s:6,h:1},e('self',18)]
+ ];
+}
+function render(){
+ const p=$('paper');
+ p.innerHTML='<h2>'+LK().t+'</h2><div class="sc"><b>'+LK().sc+'</b>: <span data-k="school" contenteditable></span> &nbsp;&nbsp; <b>'+LK().te+'</b>: <span data-k="teacher" contenteditable></span></div>';
+ p.querySelectorAll('span').forEach(s=>s.textContent=D[s.dataset.k]||'');
+ const t=document.createElement('table');
+ rows().forEach(r=>{const tr=t.insertRow();r.forEach(c=>{const td=tr.insertCell();td.colSpan=c.s;
+  if(c.h)td.className='h';if(c.i)td.className='i';
+  if(c.k){td.dataset.k=c.k;td.textContent=D[c.k]||'';if(!c.h)td.contentEditable='true';if(c.h)td.className='h'}else td.textContent=c.t;
+  if(c.c)td.style.textAlign='center';});});
+ p.appendChild(t);
+ p.querySelectorAll('[data-k][contenteditable]').forEach(el=>el.addEventListener('input',()=>{D[el.dataset.k]=el.innerText;updFit()}));
+ updFit();
+ // fix colgroup for fixed layout
+ const cg=document.createElement('colgroup');for(let i=0;i<U;i++)cg.appendChild(document.createElement('col'));t.prepend(cg);
+}
+function val(c){return c.k?(D[c.k]||''):c.t}
+
+async function generate(){
+ const g=id=>$(id).value.trim();
+ if(!g('subject')||!g('cls')){msg('Please enter at least the subject and class.',1);return}
+ const dur=+g('dur')||40,a=Math.round(dur*.25),d=dur-2*a;let lg=pickLang(),T,book=$('book').value.trim().slice(0,5000);
+ try{localStorage.setItem('lp',JSON.stringify({school:g('school'),teacher:g('teacher'),term:$('term').value}))}catch(e){}
+ const sample=await getSample();
+ if(!sample){msg('AI generation is not available in this view. Open the page from its claude.ai link.',1);return}
+ $('go').disabled=true;msg('Drafting your lesson plan…');
+ try{
+  if(TPL.text&&!TPL.map){msg('Reading your template…');TPL.map=await sample.json(mapPrompt(TPL.text))}
+  if(TPL.map&&TPL.map[lg]&&typeof TPL.map[lg]==='object'){const base=LB[lg],k={},m=TPL.map[lg];Object.keys(m).forEach(x=>{if(x in base&&x!=='name'&&typeof m[x]==='string'&&m[x].trim())k[x]=m[x].trim()});LB['c_'+lg]=Object.assign({},base,k,{name:base.name});lg='c_'+lg}
+  if(TPL.map)$('tpls').textContent='Template languages found: '+(Object.keys(TPL.map).filter(x=>LB[x]).map(x=>LB[x].name).join(', ')||'none')+'. '+(lg.startsWith('c_')?'Using your template wording for '+LB[lg].name+'.':'No '+LB[lg].name+' version found in your template: using the built-in '+LB[lg].name+' labels.');
+  if(BK){msg('Finding the unit in your book…');const kw=($('unitTitle').value+' '+$('topic').value).toLowerCase().split(/[^a-z\u00e0-\u00ff0-9]+/).filter(w=>w.length>3),many=BK.length>1,per=many?Math.max(1500,Math.floor(5500/BK.length)):6500,ord={dist:0,syllabus:1,guide:2,book:3,other:4},KL={dist:'CONTENT DISTRIBUTION',syllabus:'SYLLABUS',guide:"TEACHER'S GUIDE",book:"STUDENT'S BOOK",other:'OTHER DOCUMENT'};let ex='';
+   for(const src of [...BK].sort((x,y)=>ord[x.kind||'other']-ord[y.kind||'other'])){const k=src.kind||'other';const t=await excerpt(src,many?0:+$('pf').value,many?0:+$('pt').value,kw,msg);if(t)ex+='[Source: '+src.name+' | '+KL[k]+']\n'+t.slice(0,per)+'\n';
+    if(k==='syllabus'){msg('Reading the syllabus terms…');const g2=await termsExcerpt(src);if(g2)ex+='[Source: '+src.name+' | SYLLABUS: generic competences and cross-cutting issues]\n'+g2+'\n'}}
+   book=(ex+'\n'+book).slice(0,13000);msg(ex?'Book excerpt found. Drafting your lesson plan…':'Unit not found in the book: enter page numbers. Drafting without it…',!ex)}
+ }catch(x){msg('Could not use an uploaded file ('+((x&&x.message)||'error')+'). Continuing without it.',1)}
+ T=LB[lg];
+ const prompt=`You are an expert in Rwanda's Competence-Based Curriculum (CBC) of the Rwanda Education Board (REB) and its subject syllabi for lower and upper secondary. Write ONE lesson plan. WRITE EVERY FIELD IN ${T.name.toUpperCase()} (the plan is for a ${T.name} lesson template). Base the plan on the REB Revised Syllabi 2026 and the REB revised 2026-2027 Student's Books and Teacher's Guides for this class (the new revised books published in the REB e-learning course 'New Secondary Textbooks, Syllabi and Content Distribution (2026)') and cite the supplied documents in the references field by their titles (with Rwanda Education Board, 2026-2027), writing every word around the titles in ${T.name}.${book?' The teacher supplied the reference excerpts below, each labelled by document type: CONTENT DISTRIBUTION gives the sequence, unit and lesson titles and timing; SYLLABUS gives the key unit competence, learning objectives, content, official terminology, generic competences and cross-cutting issues; TEACHER\'S GUIDE gives methodology and activities; STUDENT\'S BOOK gives content, examples and exercises. Treat them together as the AUTHORITATIVE SOURCE: take the unit title, key unit competence and learning objectives word for word from the syllabus excerpt when present, use the subject terms of the syllabus and book, never invent terminology, and do not contradict them:\n<<<'+book+'>>>\n':''}
+Subject: ${g('subject')}. Class: ${g('cls')}. Unit: ${g('unit')||'(not given)'}. Unit title: ${g('unitTitle')||'(not given: use the syllabus unit for this number)'}. Lesson ${g('lesson')||'1'}. Topic: ${g('topic')||'(not given: choose the appropriate lesson of this unit from the syllabus)'}. Duration ${dur} min (introduction ${a}, development ${d}, conclusion ${a}). Class size ${g('size')}. Special educational needs: ${g('sen')||'none stated'}.
+Rules: follow the real REB syllabus for this subject and class; use the syllabus wording for the key unit competence; objectives use measurable verbs and mention the given text or visual aids, in 1-2 sentences numbered like "1. ..."; activities are learner-centred and active, with the teacher as facilitator; adapt tasks for the special needs if stated; for the generic competences and cross-cutting issues column, name the ones that really apply to this lesson, each with a brief explanation, using the wording of the syllabus excerpt if it gives them, otherwise ONLY these official terms: ${GLOSS[lg.replace(/^c_/,'')]} LANGUAGE RULE: write every word of every field, including the names of competences and cross-cutting issues, headings and explanations, in ${T.name}; never mix in words of another language (only proper names, book titles and the foreign words being taught in a language lesson may stay). Everything must fit one A4 page: each list cell has 2-3 lines, each starting with "- " and under 13 words, so the text can stay at a readable 10 pt font. Use "\\n" between lines.
+Reply with ONLY this JSON: {"unitTitle":"","kuc":"","title":"","obj":"","loc":"(the classroom, written in the target language)","mat":"","ref":"(titles of the supplied documents or of the REB revised books for this class and subject, Rwanda Education Board 2026-2027, in the target language)","desc":"one italic sentence summarising the activities","sen":"","iT":"","iL":"","iC":"","dT":"","dL":"","dC":"","cT":"","cL":"","cC":""}`;
+ try{
+  const r=await sample.json(prompt,{modelTier:'default'});
+  Object.assign(D,{lang:lg,school:g('school'),teacher:g('teacher'),term:$('term').value,date:g('date'),subject:g('subject'),cls:g('cls'),unit:g('unit'),lesson:g('lesson'),dur:dur+' min',size:g('size'),
+   sen:g('sen')||r.sen||T.none,unitTitle:g('unitTitle')||r.unitTitle,self:'',iLab:`${T.i} (${a} min)`,dLab:`${T.d} (${d} min)`,cLab:`${T.c} (${a} min)`});
+  ['kuc','title','obj','loc','mat','ref','desc','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(k=>D[k]=String(r[k]||'').replace(/\\n/g,'\n'));
+  if(g('topic'))D.title=g('topic');
+  $('out').hidden=false;$('nsec').hidden=true;window.LASTBOOK=book;render();
+  for(let k=0;k<2&&fitPlan().fs<9.5;k++){msg('Shortening the plan so the text stays readable on one page…');try{const sub={};['obj','mat','iT','iL','iC','dT','dL','dC','cT','cL','cC'].forEach(x=>sub[x]=D[x]);const r2=await sample.json('Shorten these cells of a lesson plan so the whole plan fits one A4 page at 10 pt. Keep the meaning and the language ('+T.name+'). Lists keep lines starting with "- ", at most 3 lines per cell and 12 words per line; obj max 2 short sentences; mat one line. Return ONLY JSON with the same keys. Use \\n between lines.\n'+JSON.stringify(sub));Object.keys(sub).forEach(x=>{if(r2[x])D[x]=String(r2[x]).replace(/\\n/g,'\n')})}catch(e){break}}
+  render();msg('Done. Review and edit below.');
+  $('out').scrollIntoView({behavior:'smooth'});
+ }catch(err){msg('Could not generate the plan: '+((err&&err.message)||'please try again'),1)}
+ $('go').disabled=false;
+}
+function msg(t,er){const m=$('msg');m.textContent=t;m.className=er?'err':''}
+
+let FZ=17;
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const RP=(o)=>'<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'+(o.b?'<w:b/>':'')+(o.i?'<w:i/>':'')+'<w:sz w:val="'+(o.z||FZ)+'"/></w:rPr>';
+const P=(t,o)=>'<w:p><w:pPr><w:spacing w:before="0" w:after="'+(o.a||0)+'"/>'+(o.c?'<w:jc w:val="center"/>':'')+'</w:pPr>'+String(t).split('\n').map((l,k)=>'<w:r>'+RP(o)+(k?'<w:br/>':'')+'<w:t xml:space="preserve">'+esc(l)+'</w:t></w:r>').join('')+'</w:p>';
+function docXml(){
+ FZ=Math.max(16,Math.min(22,Math.floor(fitPlan().fs*2)-1));
+ const U1=436,R=rows(),B=new Set([0]);
+ R.forEach(r=>{let p=0;r.forEach(c=>{p+=c.s;B.add(p)})});
+ const bs=[...B].sort((x,y)=>x-y),gw=bs.slice(1).map((v,i)=>(v-bs[i])*U1);
+ const trs=R.map(r=>{let p=0;return '<w:tr><w:trPr><w:cantSplit/></w:trPr>'+r.map(c=>{const i0=bs.indexOf(p);p+=c.s;const i1=bs.indexOf(p);const span=i1-i0,w=gw.slice(i0,i1).reduce((x,y)=>x+y,0);
+  return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(span>1?'<w:gridSpan w:val="'+span+'"/>':'')+(c.h?'<w:shd w:val="clear" w:color="auto" w:fill="E4E4E4"/>':'')+'</w:tcPr>'+P(val(c)||' ',{b:c.h,i:c.i,c:c.c||c.i})+'</w:tc>'}).join('')+'</w:tr>'}).join('');
+ const bd=['top','left','bottom','right','insideH','insideV'].map(x=>'<w:'+x+' w:val="single" w:sz="4" w:space="0" w:color="000000"/>').join('');
+ const tbl='<w:tbl><w:tblPr><w:tblW w:w="10464" w:type="dxa"/><w:tblBorders>'+bd+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="70" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+gw.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>'+trs+'</w:tbl>';
+ const sc='<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr><w:r>'+RP({b:1,z:FZ+1})+'<w:t xml:space="preserve">'+esc(LK().sc+': ')+'</w:t></w:r><w:r>'+RP({z:FZ+1})+'<w:t xml:space="preserve">'+esc(D.school||'')+'      </w:t></w:r><w:r>'+RP({b:1,z:FZ+1})+'<w:t xml:space="preserve">'+esc(LK().te+': ')+'</w:t></w:r><w:r>'+RP({z:FZ+1})+'<w:t xml:space="preserve">'+esc(D.teacher||'')+'</w:t></w:r></w:p>';
+ return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+P(LK().t,{b:1,z:30,c:1,a:80})+sc+tbl+'<w:p/><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="500" w:right="720" w:bottom="500" w:left="720" w:header="300" w:footer="300" w:gutter="0"/></w:sectPr></w:body></w:document>';
+}
+const CT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zip(files){
+ const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ const u16=v=>[v&255,(v>>8)&255],u32=v=>[v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];
+ files.forEach(([name,txt])=>{
+  const n=enc.encode(name),d=enc.encode(txt),c=crc(d);
+  const lh=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(c),...u32(d.length),...u32(d.length),...u16(n.length),...u16(0),...n]);
+  parts.push(lh,d);
+  cd.push(new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(c),...u32(d.length),...u32(d.length),...u16(n.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off),...n]));
+  off+=lh.length+d.length;
+ });
+ const cs=cd.reduce((a,x)=>a+x.length,0);
+ const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cs),...u32(off),...u16(0)]);
+ return new Blob([...parts,...cd,end],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+const mkWord=xml=>zip([
+ ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+ ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+ ['word/document.xml',xml]]);
+const wordBlob=()=>mkWord(docXml());
+const TW=[250,333,408,500,500,833,778,333,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541];
+const CPM={'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'–':0x96,'—':0x97,'…':0x85,'•':0x95};
+const cp=ch=>{const c=ch.charCodeAt(0);return CPM[ch]||(c<256?c:63)};
+const cw=(c,b)=>(c>=32&&c<=126?TW[c-32]:(c==0x92||c==0x91?333:(c==0x93||c==0x94?444:500)))*(b?1.04:1);
+const tw=(t,fs,b)=>{let w=0;for(const ch of t)w+=cw(cp(ch),b);return w*fs/1000};
+function wrap(t,mx,fs,b){const out=[];String(t).split('\n').forEach(par=>{let line='';par.split(' ').forEach(wd=>{
+  while(tw(wd,fs,b)>mx&&wd.length>1){let k=wd.length-1;while(k>1&&tw(wd.slice(0,k),fs,b)>mx)k--;if(line){out.push(line);line=''}out.push(wd.slice(0,k));wd=wd.slice(k)}
+  const tr=line?line+' '+wd:wd;if(tw(tr,fs,b)<=mx||!line)line=tr;else{out.push(line);line=wd}});out.push(line)});return out}
+function fitPlan(){const X0=28,WT=539,UN=WT/24,PH=842,PAD=2.5;
+ const lay=fs=>{let tot=0;const rr=rows().map(r=>{let h=0;const cs=r.map(c=>{const ls=wrap(val(c),c.s*UN-2*PAD,fs,c.h);h=Math.max(h,ls.length*fs*1.17+2*PAD-1);return{c,ls}});tot+=h;return{cs,h}});return{rr,tot}};
+ let fs=11,L=lay(fs);const avail=PH-2*X0-48;while(L.tot>avail&&fs>6){fs-=.25;L=lay(fs)}return{fs,L}}
+function pdfBlob(){
+ const X0=28,WT=539,UN=WT/24,PH=842,PAD=2.5;
+ const {fs,L}=fitPlan();
+ const esc2=t=>[...t].map(ch=>{const c=cp(ch);const x=String.fromCharCode(c);return(x=='\\'||x=='('||x==')')?'\\'+x:x}).join('');
+ let st='';const T=(f,sz,x,y,t)=>{st+='BT /F'+f+' '+sz+' Tf '+x.toFixed(2)+' '+y.toFixed(2)+' Td ('+esc2(t)+') Tj ET\n'};
+ let y=PH-X0;
+ const tt=LK().t;T(2,15,X0+(WT-tw(tt,15,1))/2,y-13,tt);y-=22;
+ const l1=LK().sc+': ',v1=(D.school||'')+'     ',l2=LK().te+':  ';
+ let x=X0;T(2,10,x,y-9,l1);x+=tw(l1,10,1);T(1,10,x,y-9,v1);x+=tw(v1,10,0);T(2,10,x,y-9,l2);x+=tw(l2,10,1);T(1,10,x,y-9,D.teacher||'');y-=22;
+ st+='0.5 w 0 G\n';
+ L.rr.forEach(r=>{let cx=X0;r.cs.forEach(({c,ls})=>{const w=c.s*UN;
+  if(c.h)st+='0.894 g '+cx.toFixed(2)+' '+(y-r.h).toFixed(2)+' '+w.toFixed(2)+' '+r.h.toFixed(2)+' re f 0 g\n';
+  st+=cx.toFixed(2)+' '+(y-r.h).toFixed(2)+' '+w.toFixed(2)+' '+r.h.toFixed(2)+' re S\n';
+  const f=c.h?2:(c.i?3:1),ctr=c.c||c.i;
+  ls.forEach((ln,i)=>{if(!ln)return;const lw=tw(ln,fs,c.h);T(f,fs,ctr?cx+(w-lw)/2:cx+PAD,y-PAD-fs*.88-i*fs*1.17,ln)});
+  cx+=w});y-=r.h});
+ const o=['<</Type/Catalog/Pages 2 0 R>>','<</Type/Pages/Kids[3 0 R]/Count 1>>','<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 5 0 R/F2 6 0 R/F3 7 0 R>>>>/Contents 4 0 R>>','<</Length '+st.length+'>>\nstream\n'+st+'endstream',
+  ...['Times-Roman','Times-Bold','Times-Italic'].map(n=>'<</Type/Font/Subtype/Type1/BaseFont/'+n+'/Encoding/WinAnsiEncoding>>')];
+ let out='%PDF-1.4\n';const off=[];o.forEach((b,i)=>{off.push(out.length);out+=(i+1)+' 0 obj\n'+b+'\nendobj\n'});
+ const xr=out.length;out+='xref\n0 '+(o.length+1)+'\n0000000000 65535 f \n'+off.map(v=>String(v).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<</Size '+(o.length+1)+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF';
+ const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
+ return new Blob([u],{type:'application/pdf'});
+}
+const fname=(ext,p)=>((p||'Lesson_Plan_')+(D.subject||'')+'_'+(D.cls||'')+'_'+(D.title||'').slice(0,30)).replace(/[^\w]+/g,'_')+ext;
+async function save(make,ext,p){
+ const m=$('msg2');
+ try{
+  const blob=make();let dl=null;
+  {const u=URL.createObjectURL(blob),an=document.createElement('a');an.href=u;an.download=fname(ext,p);document.body.appendChild(an);an.click();an.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+  
+  m.textContent='Saved. You can edit the cells again and re-download at any time.';m.style.color='';
+ }catch(e){
+  if(e&&e.code==='declined'){m.textContent='Download cancelled.';return}
+  m.textContent='Download failed ('+((e&&(e.code||e.message))||'unknown')+'). Please try again.';m.style.color='var(--warn)';
+ }
+}
+function refs(){const m=+(($('cls').value.match(/[1-6]/)||[])[0]||0),F={1:17480,2:17481,3:17482,4:17484,5:17485,6:17486},B='https://elearning.reb.rw/mod/folder/view.php?id=',a=(h,t)=>'<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>';
+ let h='REB revised 2026 resources: '+a('https://elearning.reb.rw/course/view.php?id=2528','all books and syllabi');
+ if(m)h+=' · '+a(B+F[m],'S'+m+' Students’ Books and Teachers’ Guides')+' · '+a(B+(m<=3?17487:17488),m<=3?'Revised syllabus, Ordinary Level':'Revised syllabus, Advanced Level');
+ $('refs').innerHTML=h+'. The page cannot open these PDFs itself, so for the most accurate plan copy the unit or lesson from the book and paste it in the box above.'}
+$('cls').addEventListener('input',refs);refs();
+let TPL={},BK=null;
+const KEYS='t=title of the lesson plan form; sc=school name; te=teacher name; term=term; date=date; sub=subject; cls=class; unit=unit number; les=lesson number; dur=duration; size=class size; sen=special educational needs row; ut=unit title; kuc=key unit competence; lt=title of the lesson; obj=instructional objectives; loc=location/plan of class; mat=learning materials; ref=references; tim=timing for each step; desc=description of teaching and learning activities; ta=teacher activity; la=learner activity; gen=generic competences and cross-cutting issues; i=introduction phase; d=lesson development phase; c=conclusion phase; self=teacher self-evaluation';
+const mapPrompt=t=>'Below is the text of a lesson plan template used by a teacher. One document may contain the same template in several languages (English, French, Kiswahili, Kinyarwanda). For EACH language present, map the wording of that language version of the template to these keys: '+KEYS+'. Return ONLY JSON of the form {"en":{key:exact wording},"fr":{...},"sw":{...},"rw":{...}} with only the languages actually present in the document, and only the keys that language version actually has. Copy the wording exactly, without any filled-in values.\n<<<'+t.slice(0,15000)+'>>>';
+function xmlText(x){return x.replace(/<\/w:p>/g,'\n').replace(/<\/w:tc>/g,' | ').replace(/<w:tab\/>/g,' ').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&')}
+async function unzipDoc(buf){const v=new DataView(buf),u=new Uint8Array(buf);let e=u.length-22;while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;const n=v.getUint16(e+10,true);let p=v.getUint32(e+16,true);
+ for(let i=0;i<n;i++){const m=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lo=v.getUint32(p+42,true),name=new TextDecoder().decode(u.subarray(p+46,p+46+nl));
+  if(name==='word/document.xml'){const st=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),d=u.subarray(st,st+cs);const raw=m===0?d:new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());return new TextDecoder().decode(raw)}
+  p+=46+nl+xl+cl}throw new Error('not a Word file')}
+function loadPdfjs(){return window.pdfjsLib?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';s.onload=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';if(pdfjsLib.VerbosityLevel)pdfjsLib.verbosity=pdfjsLib.VerbosityLevel.ERRORS;ok()};s.onerror=()=>no(new Error('PDF reader could not load'));document.head.appendChild(s)})}
+async function readFile(f){const nm=f.name.toLowerCase(),buf=await f.arrayBuffer();
+ if(nm.endsWith('.pdf')){await loadPdfjs();const doc=await pdfjsLib.getDocument({data:buf}).promise;return{pdf:doc,n:doc.numPages,cache:[]}}
+ if(nm.endsWith('.docx'))return{text:xmlText(await unzipDoc(buf))};
+ return{text:new TextDecoder().decode(buf)}}
+async function pageText(s,i){if(s.cache[i]==null){const c=await(await s.pdf.getPage(i)).getTextContent();s.cache[i]=c.items.map(x=>x.str+(x.hasEOL?'\n':' ')).join('')}return s.cache[i]}
+async function excerpt(s,from,to,kw,say){
+ if(s.pdf){
+  if(from){to=Math.min(Math.max(to||from+2,from),from+7,s.n);let o='';for(let i=from;i<=to&&i<=s.n;i++)o+=await pageText(s,i)+'\n';return o.slice(0,6500)}
+  if(!kw.length)return '';
+  let best=0,bi=0;for(let i=1;i<=s.n;i++){const t=(await pageText(s,i)).toLowerCase();const sc=kw.reduce((a,w)=>a+t.split(w).length-1,0);if(sc>best){best=sc;bi=i}if(i%10===0)say('Reading your book… page '+i+' of '+s.n)}
+  if(!bi)return '';let o='';for(let i=bi;i<=Math.min(bi+2,s.n);i++)o+=await pageText(s,i)+'\n';return o.slice(0,6500)}
+ const T=s.text,ch=[];for(let i=0;i<T.length;i+=3000)ch.push(T.slice(i,i+3000));
+ if(from)return ch.slice(Math.max(0,from-1),Math.max(1,to||from)).join('').slice(0,6500);
+ if(T.length<=6500)return T;
+ let best=0,bi=-1;ch.forEach((c,i)=>{const t=c.toLowerCase(),sc=kw.reduce((a,w)=>a+t.split(w).length-1,0);if(sc>best){best=sc;bi=i}});
+ return bi<0?'':ch.slice(bi,bi+2).join('').slice(0,6500)}
+let TPLD=[];
+$('tplf').onchange=async e=>{const fl=[...e.target.files],st=$('tpls');e.target.value='';if(!fl.length)return;const bad=[];
+ for(const f of fl){if(TPLD.some(x=>x.name===f.name&&x.size===f.size))continue;
+  try{st.textContent='Reading '+f.name+'…';const s=await readFile(f);let t=s.text;if(s.pdf){t='';for(let i=1;i<=Math.min(s.n,8);i++)t+=await pageText(s,i)+'\n'}if(t.trim().length<30)throw new Error('empty');TPLD.push({name:f.name,size:f.size,text:t})}catch(x){bad.push(f.name)}}
+ TPL=TPLD.length?{text:TPLD.map(x=>'=== '+x.name+' ===\n'+x.text).join('\n\n')}:{};
+ st.textContent=(TPLD.length?TPLD.length+' template document(s): '+TPLD.map(x=>x.name).join(', ')+'. When you generate, the version in the language you choose is used. ':'')+(bad.length?'Could not read: '+bad.join(', ')+' (use .docx, text-based PDF or text). ':'');
+ if(TPLD.length){const b=document.createElement('button');b.type='button';b.className='alt';b.style.cssText='padding:2px 10px;font-size:12px';b.textContent='Clear templates';b.onclick=()=>{TPLD=[];TPL={};st.textContent=''};st.appendChild(b)}};
+const kindOf=n=>{n=n.toLowerCase();if(/syllab|programme|curricul/.test(n))return'syllabus';if(/distribut|r[eé]partition|scheme|annual|gutegura|mgawanyo/.test(n))return'dist';if(/guide|teacher|enseignant|mwalimu|umwarimu/.test(n))return'guide';if(/book|student|learner|livre|manuel|igitabo|kitabu/.test(n))return'book';return'other'};
+const KO=[['syllabus','Syllabus'],['dist','Content distribution'],['guide','Teacher’s guide'],['book','Student’s book'],['other','Other']];
+async function termsExcerpt(s){const K=['generic competenc','cross-cutting','cross cutting','compétences génériques','competences generiques','questions transversales','thèmes transversaux','ubushobozi rusange','nsanganyamasomo','umahiri wa jumla','masuala mtambuka'];
+ const sc=t=>{const l=t.toLowerCase();return K.reduce((a,w)=>a+l.split(w).length-1,0)};
+ if(s.pdf){let best=0,bt='';for(let i=1;i<=s.n;i++){const t=await pageText(s,i),v=sc(t);if(v>best){best=v;bt=t}}return best?bt.slice(0,1800):''}
+ const l=s.text.toLowerCase();let at=-1;K.forEach(w=>{const i=l.indexOf(w);if(i>=0&&(at<0||i<at))at=i});return at<0?'':s.text.slice(Math.max(0,at-100),at+1800)}
+$('bookf').onchange=async e=>{const fl=[...e.target.files],st=$('books');e.target.value='';if(!fl.length)return;BK=BK||[];const bad=[],dup=[];
+ for(const f of fl){if(BK.some(x=>x.name===f.name&&x.size===f.size)){dup.push(f.name);continue}
+  try{st.textContent='Reading '+f.name+'…';const x=await readFile(f);x.name=f.name;x.size=f.size;x.kind=kindOf(f.name);BK.push(x)}catch(err){bad.push(f.name)}}
+ renderDocs(bad,dup)};
+function renderDocs(bad,dup){const dv=$('docs'),st=$('books');dv.innerHTML='';if(BK&&!BK.length)BK=null;
+ (BK||[]).forEach((x,i)=>{const r=document.createElement('div');r.style.cssText='display:flex;gap:8px;align-items:center;margin:4px 0';const n=document.createElement('span');n.style.cssText='flex:1;font-size:13px;word-break:break-all';n.textContent=x.name+(x.pdf?' ('+x.n+' pp)':'');
+  const sel=document.createElement('select');sel.style.cssText='width:auto;margin:0';KO.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===x.kind)o.selected=true;sel.appendChild(o)});sel.onchange=()=>{x.kind=sel.value};
+  const rm=document.createElement('button');rm.type='button';rm.className='alt';rm.style.cssText='padding:2px 10px';rm.textContent='✕';rm.title='Remove this document';rm.onclick=()=>{BK.splice(i,1);renderDocs()};r.append(n,sel,rm);dv.appendChild(r)});
+ if(BK&&BK.length>1){const c=document.createElement('button');c.type='button';c.className='alt';c.style.cssText='padding:2px 10px;font-size:12px';c.textContent='Remove all';c.onclick=()=>{BK=null;renderDocs()};dv.appendChild(c)}
+ st.textContent=(BK?BK.length+' document(s) loaded. You can keep adding more with the same button. Check the type of each one: the content distribution gives the lesson sequence, the syllabus gives competences and official terms, the guide and book give content and activities. '+(BK.length>1?'Page numbers apply only when one document is loaded.':'Enter the pages of your unit or leave them empty to search by unit title or topic.'):'')+(dup&&dup.length?' Already added: '+dup.join(', ')+'.':'')+(bad&&bad.length?' Could not read: '+bad.join(', ')+' (scanned PDFs have no text: paste it instead).':'')}
+$('go').onclick=generate;$('dl').onclick=()=>save(wordBlob,'.docx');$('pr').onclick=()=>save(pdfBlob,'.pdf');
+function updFit(){const f=fitPlan().fs,m=$('msg2');m.style.color=f>=9?'':'var(--warn)';m.textContent=f>=9?'Fits one page at '+f.toFixed(1)+' pt. Click any cell to edit.':'Long plan: text shrinks to '+f.toFixed(1)+' pt to stay on one page. Shorten some cells for a more readable size.'}
+async function ai(){if(typeof getSample==='function')return getSample();try{const s=await claude.use('sample');return s?{json:p=>s.json(p,{modelTier:'default'})}:null}catch(e){return null}}
+function readNotes(){return [...$('nbox').children].map(e=>({t:e.dataset.t||'p',x:e.innerText.trim()})).filter(b=>b.x)}
+function renderNotes(doc){const b=$('nbox');b.innerHTML='';String(doc).replace(/\\n/g,'\n').split('\n').forEach(l=>{l=l.trim();if(!l)return;let t='p';if(l.startsWith('## ')){t='h2';l=l.slice(3)}else if(l.startsWith('# ')){t='h1';l=l.slice(2)}else if(/^[-•]\s/.test(l)){t='li';l=l.slice(2)}const d=document.createElement('div');d.dataset.t=t;d.textContent=l;b.appendChild(d)});$('nsec').hidden=false}
+async function makeNotes(){
+ const m=$('msg2'),sm=await ai();
+ if(!sm){m.style.color='var(--warn)';m.textContent='Automatic notes are not available right now.';return}
+ m.style.color='';m.textContent='Preparing notes and exercises…';$('nb').disabled=true;
+ const T=LK();
+ const p="Prepare a student handout for ONE lesson of Rwanda's REB competence-based curriculum. WRITE EVERYTHING IN "+T.name.toUpperCase()+" and never mix in words of another language. Subject: "+D.subject+". Class: "+D.cls+". Unit: "+(D.unitTitle||'')+". Lesson title: "+(D.title||'')+". Learning objectives: "+(D.obj||'')+"."+(window.LASTBOOK?" Follow these reference excerpts from the REB documents (authoritative source; use their terminology):\n<<<"+String(window.LASTBOOK).slice(0,5000)+">>>\n":" Follow the REB revised syllabus and books for this class.")+"\nLayout markers, one per line: '# ' for the title, '## ' for section headings, '- ' for bullets, plain lines for paragraphs. Sections: (1) Lesson notes: key points, definitions, one or two worked examples, short summary. (2) Exercises: Part A five short knowledge questions; Part B three application or critical-thinking questions using Rwandan everyday context; Part C one homework or small project task. Number questions as plain lines like '1. ...'. (3) Marking guide: the answer and marks for every question. About 600 words in total. Return ONLY JSON {\"doc\":\"...\"} using \\n between lines.";
+ try{const r=await sm.json(p);renderNotes(r.doc);m.textContent='Notes and exercises are ready below the plan.';$('nsec').scrollIntoView({behavior:'smooth'})}
+ catch(e){m.style.color='var(--warn)';m.textContent='Could not prepare notes: '+((e&&e.message)||'please try again')}
+ $('nb').disabled=false}
+function notesXml(bl){
+ const S={h1:{z:32,b:1,c:1,a:120},h2:{z:26,b:1,a:80},li:{z:22,a:40},p:{z:22,a:80}};
+ const body=bl.map(b=>P((b.t==='li'?'• ':'')+b.x,S[b.t]||S.p)).join('');
+ return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="1000" w:bottom="1000" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>'}
+function notesPdf(bl){
+ const M=50,W=495,pg=[];let st='',y=842-M;
+ const pe=t=>[...t].map(ch=>{const c=cp(ch);const x=String.fromCharCode(c);return(x=='\\'||x=='('||x==')')?'\\'+x:x}).join('');
+ bl.forEach(b=>{const h=b.t==='h1'?16:(b.t==='h2'?13:11),bold=b.t[0]==='h',ls=wrap((b.t==='li'?'• ':'')+b.x,W-(b.t==='li'?12:0),h,bold);if(bold)y-=h*.5;
+  ls.forEach((l,i)=>{y-=h*1.22;if(y<M){pg.push(st);st='';y=842-M-h*1.22}const x=b.t==='h1'?M+(W-tw(l,h,1))/2:M+(b.t==='li'&&i?12:0);st+='BT /F'+(bold?2:1)+' '+h+' Tf '+x.toFixed(1)+' '+y.toFixed(1)+' Td ('+pe(l)+') Tj ET\n'});
+  y-=h*.3});
+ pg.push(st);const n=pg.length,fid=3+2*n,o=['<</Type/Catalog/Pages 2 0 R>>','<</Type/Pages/Kids['+pg.map((_,i)=>(3+2*i)+' 0 R').join(' ')+']/Count '+n+'>>'];
+ pg.forEach((c,i)=>o.push('<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 '+fid+' 0 R/F2 '+(fid+1)+' 0 R>>>>/Contents '+(4+2*i)+' 0 R>>','<</Length '+c.length+'>>\nstream\n'+c+'endstream'));
+ ['Times-Roman','Times-Bold'].forEach(f=>o.push('<</Type/Font/Subtype/Type1/BaseFont/'+f+'/Encoding/WinAnsiEncoding>>'));
+ let out='%PDF-1.4\n';const off=[];o.forEach((b,i)=>{off.push(out.length);out+=(i+1)+' 0 obj\n'+b+'\nendobj\n'});
+ const xr=out.length;out+='xref\n0 '+(o.length+1)+'\n0000000000 65535 f \n'+off.map(v=>String(v).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<</Size '+(o.length+1)+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF';
+ const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return new Blob([u],{type:'application/pdf'})}
+$('nb').onclick=makeNotes;
+$('nw').onclick=()=>save(()=>mkWord(notesXml(readNotes())),'.docx','Notes_Exercises_');
+$('np').onclick=()=>save(()=>notesPdf(readNotes()),'.pdf','Notes_Exercises_');
+
+</script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="app-extras.js"></script>
+</body>
+</html>
