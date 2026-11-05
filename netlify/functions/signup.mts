@@ -1,20 +1,12 @@
 import { admin, verifyRequestOrigin, AuthError } from '@netlify/identity'
 import type { Config } from '@netlify/functions'
 
-// Creates an account with username, email and password.
+// Creates an account with first name, second name, email and password.
+// The username is the user's first and second name only (e.g. "Eric Bless").
 // Accounts are created already confirmed, so no verification email is sent.
-const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,30}$/
+const NAME_RE = /^\p{L}[\p{L}'-]{1,29}$/u
+const cap = (n: string) => n.charAt(0).toUpperCase() + n.slice(1)
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-async function usernameTaken(username: string) {
-  const wanted = username.toLowerCase()
-  for (let page = 1; page <= 50; page++) {
-    const users = await admin.listUsers({ page, perPage: 500 })
-    if (users.some((u) => String(u.userMetadata?.username ?? '').toLowerCase() === wanted)) return true
-    if (users.length < 500) break
-  }
-  return false
-}
 
 export default async (req: Request) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 })
@@ -28,28 +20,27 @@ export default async (req: Request) => {
   try {
     body = await req.json()
   } catch {}
-  const username = String(body?.username ?? '').trim()
+  const firstName = cap(String(body?.firstName ?? '').trim())
+  const lastName = cap(String(body?.lastName ?? '').trim())
   const email = String(body?.email ?? '').trim().toLowerCase()
   const password = String(body?.password ?? '')
 
-  if (!USERNAME_RE.test(username))
+  if (!NAME_RE.test(firstName) || !NAME_RE.test(lastName))
     return Response.json(
-      { error: 'Username must be 3–30 characters: letters, numbers, dot, dash or underscore.' },
+      { error: 'Please enter your first name and second name (letters only, one name in each box).' },
       { status: 422 },
     )
+  const username = `${firstName} ${lastName}`
   if (!EMAIL_RE.test(email) || email.length > 254)
     return Response.json({ error: 'Please enter a valid email address.' }, { status: 422 })
   if (password.length < 6 || password.length > 128)
     return Response.json({ error: 'Password must be at least 6 characters.' }, { status: 422 })
 
   try {
-    if (await usernameTaken(username))
-      return Response.json({ error: 'That username is already taken.' }, { status: 409 })
-
     const user = await admin.createUser({
       email,
       password,
-      data: { user_metadata: { username, full_name: username } },
+      data: { user_metadata: { username, first_name: firstName, last_name: lastName, full_name: username } },
     })
     return Response.json({ ok: true, id: user.id })
   } catch (e) {
