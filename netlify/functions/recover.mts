@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { resetAttempts, securityAnswers } from '../../db/schema.js'
 import { matches, normBirthday, normFood } from '../../db/security.js'
+import { OWNER_EMAIL, OWNER_PASSWORD_FLAG, setSetting } from '../../db/subs.js'
 
 // Forgot password without email: the user proves who they are with their birthday OR favorite food,
 // then chooses a new password.
@@ -53,6 +54,8 @@ export default async (req: Request) => {
     return err(/password/i.test(m) && m.length < 200 ? m : 'Could not save the new password. Please try again.', 500)
   }
   await db.delete(resetAttempts).where(eq(resetAttempts.email, email))
+  // A password the owner chose must not be replaced later by the initial admin password.
+  if (email === OWNER_EMAIL) await setSetting(OWNER_PASSWORD_FLAG, new Date().toISOString()).catch(() => {})
   return Response.json({ ok: true })
 }
 

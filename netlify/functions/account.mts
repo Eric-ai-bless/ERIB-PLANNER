@@ -4,7 +4,7 @@ import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { paymentMethods, securityAnswers, upgradeRequests } from '../../db/schema.js'
 import { saveAnswers } from '../../db/security.js'
-import { OWNER_EMAIL, SUSPENDED_MSG, ensurePlans, entitlement, getSettings, isAdmin, isSuspended, setSetting } from '../../db/subs.js'
+import { OWNER_EMAIL, OWNER_PASSWORD_FLAG, SUSPENDED_MSG, ensurePlans, entitlement, getSettings, isAdmin, isSuspended, setSetting } from '../../db/subs.js'
 
 // The signed-in user's subscription.
 //   GET  /api/account  -> current plan, limits, this month's usage, plans, payment methods, my upgrade requests
@@ -55,7 +55,7 @@ export default async (req: Request) => {
       if (pw.length < 6 || pw.length > 128) return Response.json({ error: 'The new password must be at least 6 characters.' }, { status: 422 })
       await idAdmin.updateUser(user.id, { password: pw })
       // The one-time initial admin password must never overwrite a password the owner chose.
-      if ((user.email || '').toLowerCase() === OWNER_EMAIL) await setSetting('owner_password_set_v2', new Date().toISOString())
+      if ((user.email || '').toLowerCase() === OWNER_EMAIL) await setSetting(OWNER_PASSWORD_FLAG, new Date().toISOString())
       return Response.json({ ok: true })
     }
     if (await isSuspended(user.id)) return Response.json({ error: SUSPENDED_MSG }, { status: 403 })
