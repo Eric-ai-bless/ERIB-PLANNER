@@ -597,7 +597,9 @@ function meter(lbl,used,max){const r=el('div','use'),b=el('div','meter'),i=el('i
 let ACC=null,PICK=0;
 window.clearAccount=()=>{ACC=null;PICK=0;$('dadm').hidden=true;$('dwa').hidden=true;$('susp').hidden=true;['kPlan','kLes','kEx'].forEach(k=>$(k).textContent='–');$('quota').textContent=''};
 window.loadAccount=async function(){try{ACC=await call('/api/account')}catch(e){$('subbody').innerHTML='';$('subbody').appendChild(el('p','dempty','Could not load your subscription: '+e.message));return}
- renderAcc();if(document.body.dataset.view==='admin'&&ACC.isAdmin&&!ADM)loadAdmin()};
+ renderAcc();if(document.body.dataset.view==='admin'&&ACC.isAdmin&&!ADM)loadAdmin();
+ // Ask once per session for the birthday / favorite food needed to reset a forgotten password.
+ try{if(!ACC.hasSecurity&&!sessionStorage.getItem('erib.secAsked')){sessionStorage.setItem('erib.secAsked','1');if(confirm('Please save your birthday and favorite food now. You need them to reset your password if you forget it.\n\nOpen “Password & security” now?'))setView('sub')}}catch(e){}};
 function renderAcc(){const a=ACC,s=$('subbody');$('dadm').hidden=!a.isAdmin;
  const who=($('uname').textContent||'')+(a.email?' ('+a.email+')':'');
  const dw=$('dwa');dw.hidden=!a.whatsapp;if(a.whatsapp)dw.href=waUrl(a.whatsapp,'Hello admin, I am '+who+' from ERIB CBC LESSON PLANNER. ');

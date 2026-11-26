@@ -2,7 +2,7 @@ import { admin, verifyRequestOrigin, AuthError } from '@netlify/identity'
 import type { Config } from '@netlify/functions'
 import { eq } from 'drizzle-orm'
 import { normBirthday, normFood, saveAnswers } from '../../db/security.js'
-import { getSettings, OWNER_EMAIL, setSetting } from '../../db/subs.js'
+import { getSettings, OWNER_EMAIL, OWNER_PASSWORD_FLAG, setSetting } from '../../db/subs.js'
 import { db } from '../../db/index.js'
 import { lessonPlans, securityAnswers, usage, userSubscriptions } from '../../db/schema.js'
 
@@ -93,7 +93,7 @@ export default async (req: Request) => {
       try {
         // Never run the one-time replacement (or the initial admin password setup) again.
         await setSetting(OWNER_RECREATE_FLAG, new Date().toISOString())
-        await setSetting('owner_password_set_v2', new Date().toISOString())
+        await setSetting(OWNER_PASSWORD_FLAG, new Date().toISOString())
         if (replacedId) {
           await db.update(lessonPlans).set({ userId: user.id }).where(eq(lessonPlans.userId, replacedId))
           await db.delete(securityAnswers).where(eq(securityAnswers.userId, replacedId))

@@ -6,6 +6,10 @@ import { appSettings, subscriptionPlans, usage, userSubscriptions } from './sche
 // The owner's account. It is always an admin, and can make other users admins.
 export const OWNER_EMAIL = 'blessedtalent1997@gmail.com'
 
+// Set once the owner's password has been applied from the ADMIN_INITIAL_PASSWORD secret (or the owner
+// chose their own). Bumping the version applies the secret again one time, e.g. after the admin password changed.
+export const OWNER_PASSWORD_FLAG = 'owner_password_set_v3'
+
 export const SUSPENDED_MSG = 'Your account has been stopped by the admin. Please contact the admin to restore access.'
 
 // Admin settings (key/value).

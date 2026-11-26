@@ -1,12 +1,12 @@
 import type { Config } from '@netlify/functions'
 import { admin as idAdmin } from '@netlify/identity'
-import { getSettings, OWNER_EMAIL, setSetting } from '../../db/subs.js'
+import { getSettings, OWNER_EMAIL, OWNER_PASSWORD_FLAG, setSetting } from '../../db/subs.js'
 
 // One-time setup of the owner (admin) password from the ADMIN_INITIAL_PASSWORD secret.
 // Called only when the owner's sign-in is rejected and the typed password equals the initial
 // admin password. It runs at most once; after that (or after the owner changes the password
 // from the Subscription page) it does nothing, so a chosen password is never overwritten.
-const OWNER_SETUP_FLAG = 'owner_password_set_v2'
+const OWNER_SETUP_FLAG = OWNER_PASSWORD_FLAG
 
 export default async (req: Request) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 })
